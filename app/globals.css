@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Raleway:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #0A1E3C;
+  --red: #D32F2F;
+  --green: #4CAF50;
+  --orange: #FF9800;
+  --white: #FFFFFF;
+  --dark-gray: #212121;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-inter text-[#212121] bg-white antialiased;
+    font-size: 16px;
+  }
+
+  h1, h2, h3 {
+    @apply font-montserrat;
+  }
+
+  h4, h5, h6 {
+    @apply font-raleway;
+  }
+
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-navy;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-navy text-white font-raleway font-semibold px-6 py-3 rounded-md
+           transition-all duration-300 hover:bg-brand-red hover:shadow-glow
+           focus-visible:outline-2 focus-visible:outline-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-navy text-navy font-raleway font-semibold px-6 py-3 rounded-md
+           transition-all duration-300 hover:bg-navy hover:text-white
+           focus-visible:outline-2 focus-visible:outline-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-red {
+    @apply bg-brand-red text-white font-raleway font-semibold px-6 py-3 rounded-md
+           transition-all duration-300 hover:bg-red-700 hover:shadow-glow
+           focus-visible:outline-2 focus-visible:outline-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-card hover:shadow-card-hover
+           transition-all duration-300;
+  }
+
+  .section-title {
+    @apply font-montserrat font-bold text-navy;
+  }
+
+  .section-subtitle {
+    @apply font-raleway text-[#212121]/70 leading-relaxed;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 border-b-2 border-gray-200 bg-transparent
+           font-inter text-[#212121] placeholder-gray-400
+           focus:outline-none focus:border-brand-red transition-colors duration-300;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .container-xl {
+    @apply max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+/* Scroll animations */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--navy);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--red);
+}
+
+/* Tab underline animation */
+.tab-active {
+  @apply text-navy;
+  position: relative;
+}
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--red);
+  border-radius: 1px;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #0A1E3C 0%, #D32F2F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hero overlay */
+.hero-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(10, 30, 60, 0.85) 0%,
+    rgba(10, 30, 60, 0.6) 50%,
+    rgba(211, 47, 47, 0.3) 100%
+  );
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Confetti canvas */
+#confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}

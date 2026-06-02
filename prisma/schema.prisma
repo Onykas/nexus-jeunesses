@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  spectateur
+  participant
+  volontaire
+  partenaire
+  media
+}
+
+enum Status {
+  pending
+  confirmed
+  cancelled
+  waitlist
+}
+
+model Inscription {
+  id              String    @id @default(cuid())
+  role            Role
+  prenom          String
+  nom             String
+  email           String    @unique
+  telephone       String    @unique
+  nationalite     String
+  dateNaissance   DateTime?
+  motivation      String?
+  besoinsSpeciaux String[]
+  consentEmail    Boolean   @default(false)
+  consentSMS      Boolean   @default(false)
+  consentWhatsapp Boolean   @default(false)
+  status          Status    @default(confirmed)
+  ipAddress       String?
+  emailSentAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([nationalite])
+  @@index([createdAt])
+}
+
+model ContactRequest {
+  id           String   @id @default(cuid())
+  type         String
+  nom          String
+  titre        String?
+  secteur      String?
+  organisation String?
+  email        String
+  telephone    String?
+  motivation   String?
+  message      String?
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+
+  @@index([email])
+  @@index([type])
+}
+
+model Newsletter {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("site")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model EmailLog {
+  id          String   @id @default(cuid())
+  to          String
+  subject     String
+  type        String
+  status      String
+  messageId   String?
+  error       String?
+  sentAt      DateTime @default(now())
+
+  @@index([to])
+  @@index([type])
+}
