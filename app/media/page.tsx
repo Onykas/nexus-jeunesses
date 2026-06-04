@@ -7,18 +7,23 @@ export default function MediaPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative bg-navy pt-32 pb-16 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/5 rounded-full blur-3xl" />
-        </div>
-        <div className="container-xl relative text-white text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <section className="relative min-h-[70vh] flex items-end justify-start overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url('/images/hero.jpeg')` }}
+        />
+        <div className="absolute inset-0 hero-overlay" />
+        <div className="relative container-xl pb-16 pt-32 text-white">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <span className="font-raleway text-brand-orange font-semibold text-sm uppercase tracking-widest mb-4 block">
               NEXUS MÉDIA
             </span>
-            <h1 className="font-montserrat font-black text-5xl md:text-6xl mb-4">
+            <h1 className="font-montserrat font-black text-5xl md:text-6xl lg:text-7xl leading-tight mb-4">
               L'univers éditorial<br />de <span className="text-brand-red">NEXUS</span>
             </h1>
+            <p className="font-raleway text-xl text-white/80 max-w-xl">
+              Ce qui n'est pas documenté finit par disparaître.
+            </p>
           </motion.div>
         </div>
       </section>
@@ -33,8 +38,8 @@ export default function MediaPage() {
                 et excellence. Parce que ce qui n'est pas documenté finit par disparaître.
               </p>
               <p>
-                NEXUS Média donne la voix aux jeunes leaders résidents au Maroc afin de les
-                positionner comme un carrefour des jeunes leaders.
+                NEXUS Média donne la voix aux jeunes leaders résidents au Maroc afin de positionner
+                le Maroc comme un carrefour des jeunes leaders.
               </p>
             </div>
           </AnimatedSection>
