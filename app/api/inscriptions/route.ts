@@ -1,24 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { sendConfirmationEmail } from '@/lib/email';
 import { generateICalendar, sanitizeInput, rateLimit } from '@/lib/utils';
-
-const schema = z.object({
-  role: z.enum(['spectateur', 'participant', 'volontaire', 'partenaire', 'media']),
-  prenom: z.string().min(2).max(50),
-  nom: z.string().min(2).max(50),
-  email: z.string().email().max(254),
-  telephone: z.string().min(8).max(20),
-  nationalite: z.string().min(2).max(50),
-  dateNaissance: z.string().optional(),
-  motivation: z.string().max(200).optional(),
-  besoinsSpeciaux: z.array(z.string()).optional(),
-  consentEmail: z.boolean().optional(),
-  consentSMS: z.boolean().optional(),
-  consentWhatsapp: z.boolean().optional(),
-  rgpd: z.literal(true),
-});
 
 const rateLimitMap = new Map<string, { count: number; ts: number }>();
 
@@ -29,71 +12,92 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Trop de tentatives. Réessayez demain.' }, { status: 429 });
   }
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
+  let fields: Record<string, string> = {};
+  let cvFileName: string | null = null;
+
+  const contentType = req.headers.get('content-type') || '';
+
+  if (contentType.includes('multipart/form-data')) {
+    try {
+      const formData = await req.formData();
+      formData.forEach((value, key) => {
+        if (typeof value === 'string') fields[key] = value;
+        else if (value instanceof File && key === 'cv') cvFileName = value.name;
+      });
+    } catch {
+      return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
+    }
+  } else {
+    try {
+      fields = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
+    }
   }
 
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Données invalides.', details: parsed.error.flatten() }, { status: 422 });
+  const { role, prenom, nom, email, telephone, nationalite, dateNaissance,
+          motivation, organisation, secteur, nomMedia, typeMedia, lienPublication,
+          consentEmail, consentSMS, consentWhatsapp, rgpd } = fields;
+
+  if (!role || !prenom || !nom || !email || !telephone || !nationalite || !dateNaissance) {
+    return NextResponse.json({ error: 'Champs requis manquants.' }, { status: 422 });
+  }
+  if (!['spectateur', 'volontaire', 'partenaire', 'media'].includes(role)) {
+    return NextResponse.json({ error: 'Rôle invalide.' }, { status: 422 });
+  }
+  if (rgpd !== 'true' && rgpd !== true as unknown as string) {
+    return NextResponse.json({ error: 'Consentement RGPD requis.' }, { status: 422 });
   }
 
-  const data = parsed.data;
-
   try {
-    // Check for duplicate
     const existing = await prisma.inscription.findFirst({
-      where: { OR: [{ email: data.email }, { telephone: data.telephone }] },
+      where: { email: email.toLowerCase() },
     });
-
     if (existing) {
-      return NextResponse.json(
-        { error: 'Un compte avec cet email ou ce téléphone existe déjà.' },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: 'Un compte avec cet email existe déjà.' }, { status: 409 });
     }
 
-    // Save to DB
     const inscription = await prisma.inscription.create({
       data: {
-        role: data.role,
-        prenom: sanitizeInput(data.prenom),
-        nom: sanitizeInput(data.nom),
-        email: data.email.toLowerCase(),
-        telephone: data.telephone,
-        nationalite: data.nationalite,
-        dateNaissance: data.dateNaissance ? new Date(data.dateNaissance) : null,
-        motivation: data.motivation ? sanitizeInput(data.motivation) : null,
-        besoinsSpeciaux: data.besoinsSpeciaux ?? [],
-        consentEmail: data.consentEmail ?? false,
-        consentSMS: data.consentSMS ?? false,
-        consentWhatsapp: data.consentWhatsapp ?? false,
+        role: role as any,
+        prenom: sanitizeInput(prenom),
+        nom: sanitizeInput(nom),
+        email: email.toLowerCase(),
+        telephone,
+        nationalite,
+        dateNaissance: new Date(dateNaissance),
+        motivation: motivation ? sanitizeInput(motivation) : null,
+        cvUrl: cvFileName || null,
+        organisation: organisation ? sanitizeInput(organisation) : null,
+        secteur: secteur || null,
+        nomMedia: nomMedia ? sanitizeInput(nomMedia) : null,
+        typeMedia: typeMedia || null,
+        lienPublication: lienPublication || null,
+        consentEmail: consentEmail === 'true' || consentEmail === true as unknown as string,
+        consentSMS: consentSMS === 'true' || consentSMS === true as unknown as string,
+        consentWhatsapp: consentWhatsapp === 'true' || consentWhatsapp === true as unknown as string,
         status: 'confirmed',
+        ipAddress: ip,
       },
     });
 
-    // Send confirmation email
-    if (data.consentEmail !== false) {
+    if (consentEmail !== 'false') {
       await sendConfirmationEmail({
-        prenom: data.prenom,
-        nom: data.nom,
-        email: data.email,
-        telephone: data.telephone,
-        nationalite: data.nationalite,
-        role: data.role,
-      });
+        prenom,
+        nom,
+        email,
+        telephone,
+        nationalite,
+        role,
+      }).catch((e) => console.error('Email send failed:', e));
     }
 
-    // Generate iCalendar
     const ics = generateICalendar({
       title: 'NEXUS SPECTACLE 2026',
-      description: `Votre inscription est confirmée. Rôle: ${data.role}. Organisé par UESCOM.`,
-      location: 'Théâtre Mohamed Bahnini, Rabat, Maroc',
-      startDate: new Date('2026-07-11T17:00:00Z'),
-      endDate: new Date('2026-07-11T21:00:00Z'),
+      description: `Votre inscription est confirmée. Rôle: ${role}.`,
+      location: 'Théâtre INSMAC, Rabat, Maroc',
+      startDate: new Date('2026-07-11T13:00:00Z'),
+      endDate: new Date('2026-07-11T16:00:00Z'),
     });
 
     return NextResponse.json({
@@ -115,8 +119,11 @@ export async function GET(req: NextRequest) {
   }
   const inscriptions = await prisma.inscription.findMany({
     orderBy: { createdAt: 'desc' },
-    take: 100,
-    select: { id: true, prenom: true, nom: true, email: true, role: true, nationalite: true, status: true, createdAt: true },
+    take: 200,
+    select: {
+      id: true, prenom: true, nom: true, email: true, role: true,
+      nationalite: true, status: true, createdAt: true,
+    },
   });
   return NextResponse.json({ inscriptions });
 }

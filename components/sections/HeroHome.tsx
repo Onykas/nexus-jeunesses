@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Calendar, MapPin, Star } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Ticket } from 'lucide-react';
 
 export default function HeroHome() {
   return (
@@ -10,14 +10,14 @@ export default function HeroHome() {
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
       aria-label="Section héro principale"
     >
-      {/* Background */}
+      {/* Background — groupe de jeunes de différentes nationalités */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80')`,
+          backgroundImage: `url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1920&q=80')`,
         }}
         role="img"
-        aria-label="Théâtre Mohamed Bahnini, Rabat"
+        aria-label="Groupe de jeunes du monde réunis"
       />
       <div className="absolute inset-0 hero-overlay" />
 
@@ -26,19 +26,6 @@ export default function HeroHome() {
       <div className="absolute bottom-32 left-16 w-64 h-64 bg-brand-orange/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative container-xl pt-24 pb-16 text-center text-white">
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 glass-card rounded-full px-4 py-2 mb-8"
-        >
-          <Star size={14} className="text-brand-orange" fill="currentColor" />
-          <span className="font-raleway text-sm text-white/90 font-medium tracking-wide">
-            Orchestré par UESCOM · 12+ nationalités représentées
-          </span>
-        </motion.div>
-
         {/* Main headline */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
@@ -57,8 +44,8 @@ export default function HeroHome() {
           transition={{ duration: 0.6, delay: 0.25 }}
           className="font-raleway text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          NEXUS JEUNESSES transforme les leaders de demain et documente leur
-          impact avec la même rigueur que celle des grandes institutions mondiales.
+          NEXUS DES JEUNESSES est le premier et seul programme d'une année qui
+          réunit la jeunesse du monde présenté au Maroc.
         </motion.p>
 
         {/* Event info */}
@@ -66,7 +53,7 @@ export default function HeroHome() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.35 }}
-          className="flex flex-wrap items-center justify-center gap-6 mb-10 text-white/70"
+          className="flex flex-wrap items-center justify-center gap-4 mb-10 text-white/70"
         >
           <span className="flex items-center gap-2">
             <Calendar size={16} className="text-brand-red" />
@@ -75,11 +62,12 @@ export default function HeroHome() {
           <span className="w-px h-4 bg-white/30" />
           <span className="flex items-center gap-2">
             <MapPin size={16} className="text-brand-red" />
-            <span className="font-inter text-sm">Théâtre Mohamed Bahnini, Rabat</span>
+            <span className="font-inter text-sm">Théâtre INSMAC, Rabat</span>
           </span>
           <span className="w-px h-4 bg-white/30 hidden sm:block" />
-          <span className="inline-flex items-center gap-1 bg-brand-green/20 text-brand-green border border-brand-green/30 rounded-full px-3 py-1 text-xs font-medium">
-            ✓ ENTRÉE GRATUITE
+          <span className="flex items-center gap-2">
+            <Ticket size={16} className="text-brand-orange" />
+            <span className="font-inter text-sm">Entrée sur réservation</span>
           </span>
         </motion.div>
 

@@ -49,9 +49,9 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${prehead
     </div>
     <div class="body">${content}</div>
     <div class="footer">
-      <p>NEXUS JEUNESSES — Orchestré par UESCOM</p>
-      <p>Théâtre Mohamed Bahnini, Rabat, Maroc</p>
-      <p><a href="mailto:contact@nexusjeunesses.org" style="color:#D32F2F;">contact@nexusjeunesses.org</a></p>
+      <p>NEXUS JEUNESSES — UESCOM · Speak To Lead · CESAM</p>
+      <p>Théâtre INSMAC, Rabat, Maroc</p>
+      <p>+212 7 15 79 59 62</p>
       <p style="margin-top:12px;font-size:11px;">Vous recevez cet email car vous vous êtes inscrit(e) à NEXUS SPECTACLE.<br/>
       <a href="{{unsubscribe_url}}" style="color:#999;">Se désabonner</a></p>
     </div>

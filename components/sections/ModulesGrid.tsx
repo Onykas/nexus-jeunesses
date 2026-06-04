@@ -1,17 +1,16 @@
 import Link from 'next/link';
-import { ArrowRight, Mic2, Newspaper, Award, BarChart3, Utensils, Dumbbell } from 'lucide-react';
+import { ArrowRight, Mic2, Newspaper, Award, BarChart3, Utensils, Dumbbell, Crown } from 'lucide-react';
 import AnimatedSection from '@/components/ui/AnimatedSection';
 
 const modules = [
   {
     id: 'spectacle',
-    href: '/spectacle',
     icon: Mic2,
     title: 'NEXUS SPECTACLE',
     tagline: 'Cœur culturel & intellectuel',
     description:
-      'Eloquentia 2.0, performances de danse culturelle et 3 interventions TED X-style. L\'événement phare du 11 juillet 2026.',
-    cta: 'S\'inscrire — Gratuit',
+      "Concours d'éloquence, performances et interventions TED X-style. L'événement phare du 11 juillet 2026.",
+    cta: "S'inscrire — Gratuit",
     ctaHref: '/spectacle#inscription',
     accent: '#D32F2F',
     badge: '11 Juillet 2026',
@@ -19,12 +18,11 @@ const modules = [
   },
   {
     id: 'media',
-    href: '/media',
     icon: Newspaper,
     title: 'NEXUS MÉDIA',
     tagline: 'Ligne éditoriale & visibilité',
     description:
-      'Articles, vidéos, podcasts — l\'univers éditorial qui documente et amplifie la voix de la jeunesse africaine.',
+      "Articles, vidéos, podcasts — l'univers éditorial qui documente et amplifie la voix des jeunes leaders résidents au Maroc.",
     cta: 'Découvrir',
     ctaHref: '/media',
     accent: '#FF9800',
@@ -33,13 +31,12 @@ const modules = [
   },
   {
     id: 'olympiques',
-    href: '/olympiques',
     icon: Dumbbell,
     title: 'NEXUS OLYMPIQUES',
     tagline: 'Excellence athlétique',
     description:
-      'Le sommet de l\'excellence athlétique et du leadership jeunesse. Une activation à venir.',
-    cta: 'Rester informé',
+      "Le sommet de l'excellence athlétique et du leadership jeunesse. Une activation à venir.",
+    cta: 'Bientôt disponible',
     ctaHref: '/olympiques',
     accent: '#4CAF50',
     badge: 'Bientôt',
@@ -47,41 +44,51 @@ const modules = [
   },
   {
     id: 'rapport',
-    href: '/rapport',
     icon: BarChart3,
     title: 'NEXUS RAPPORT',
-    tagline: 'Impact & synthèse',
+    tagline: 'Premier rapport sur les jeunesses au Maroc',
     description:
-      'Tableau de bord analytique, insights démographiques, témoignages et mini-documentaire post-événement.',
-    cta: 'Voir le rapport',
+      'NEXUS RAPPORT sera le premier rapport sur les jeunesses au Maroc, présenté aux autorités compétentes lors du NEXUS DÎNER.',
+    cta: 'En savoir plus',
     ctaHref: '/rapport',
     accent: '#0A1E3C',
-    badge: 'Analytique',
+    badge: 'Octobre 2026',
     badgeColor: 'bg-navy/10 text-navy',
   },
   {
     id: 'diner',
-    href: '/diner',
     icon: Utensils,
     title: 'NEXUS DÎNER',
     tagline: 'Cercle de leadership',
     description:
-      'Un dîner d\'élite exclusive réunissant leaders politiques, entrepreneurs et académiques dans un cadre diplomatique.',
-    cta: 'Candidater',
-    ctaHref: '/diner#candidature',
+      'Un dîner réunissant leaders, entrepreneurs et académiques dans un cadre diplomatique. Présentation du NEXUS RAPPORT.',
+    cta: 'En savoir plus',
+    ctaHref: '/diner',
     accent: '#212121',
-    badge: 'Sur invitation',
+    badge: '17 Octobre 2026',
     badgeColor: 'bg-gray-100 text-gray-600',
   },
   {
+    id: 'mesdames',
+    icon: Crown,
+    title: 'NEXUS MESDAMES',
+    tagline: 'Voix féminines & leadership',
+    description:
+      'Un espace dédié aux femmes leaders des jeunesses au Maroc. Programme complet bientôt disponible.',
+    cta: 'Bientôt disponible',
+    ctaHref: '/mesdames',
+    accent: '#9C27B0',
+    badge: 'Nouveau',
+    badgeColor: 'bg-purple-100 text-purple-700',
+  },
+  {
     id: 'join',
-    href: '/spectacle#inscription',
     icon: Award,
     title: 'REJOIGNEZ LE MOUVEMENT',
     tagline: 'Votre place vous attend',
     description:
-      'Participez en tant que spectateur, volontaire, partenaire ou média. La jeunesse africaine porte sa propre lumière.',
-    cta: 'S\'inscrire maintenant',
+      "Participez en tant que spectateur, volontaire, partenaire ou média. Les jeunesses du monde portent leur propre lumière.",
+    cta: "S'inscrire maintenant",
     ctaHref: '/spectacle#inscription',
     accent: '#D32F2F',
     badge: 'Gratuit',
@@ -99,16 +106,16 @@ export default function ModulesGrid() {
             L'écosystème NEXUS
           </span>
           <h2 className="section-title text-4xl md:text-5xl mb-4">
-            6 modules. Une vision.
+            7 modules. Une vision.
           </h2>
           <p className="section-subtitle max-w-2xl mx-auto text-lg">
-            Un écosystème institutionnel multi-modules fédérant la jeunesse de 12+ nationalités
+            Un écosystème institutionnel multi-modules fédérant les jeunesses au Maroc
             autour d'une vision d'influence, de visibilité et d'intégration.
           </p>
         </AnimatedSection>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {modules.map(({ id, href, icon: Icon, title, tagline, description, cta, ctaHref, accent, badge, badgeColor, highlight }, i) => (
+          {modules.map(({ id, icon: Icon, title, tagline, description, cta, ctaHref, accent, badge, badgeColor, highlight }, i) => (
             <AnimatedSection key={id} delay={i * 0.08}>
               <div
                 className={`card h-full flex flex-col p-6 group hover:-translate-y-1 transition-all duration-300 ${

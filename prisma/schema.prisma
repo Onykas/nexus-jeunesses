@@ -9,7 +9,6 @@ datasource db {
 
 enum Role {
   spectateur
-  participant
   volontaire
   partenaire
   media
@@ -22,17 +21,33 @@ enum Status {
   waitlist
 }
 
+enum CandidateStatus {
+  pending
+  validated
+  rejected
+}
+
+enum VotePhase {
+  public
+  jury
+}
+
 model Inscription {
   id              String    @id @default(cuid())
   role            Role
   prenom          String
   nom             String
   email           String    @unique
-  telephone       String    @unique
+  telephone       String
   nationalite     String
-  dateNaissance   DateTime?
+  dateNaissance   DateTime
   motivation      String?
-  besoinsSpeciaux String[]
+  cvUrl           String?
+  organisation    String?
+  secteur         String?
+  nomMedia        String?
+  typeMedia       String?
+  lienPublication String?
   consentEmail    Boolean   @default(false)
   consentSMS      Boolean   @default(false)
   consentWhatsapp Boolean   @default(false)
@@ -46,6 +61,166 @@ model Inscription {
   @@index([role])
   @@index([nationalite])
   @@index([createdAt])
+}
+
+model UserAccount {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  prenom        String
+  nom           String
+  nationalite   String
+  dateNaissance DateTime?
+  photoUrl      String?
+  isJury        Boolean   @default(false)
+  juryCode      String?   @unique
+  isPresent     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  votes         Vote[]
+  sessions      UserSession[]
+
+  @@index([email])
+}
+
+model UserSession {
+  id        String      @id @default(cuid())
+  userId    String
+  token     String      @unique
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+  user      UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model EloquenceCandidate {
+  id            String          @id @default(cuid())
+  prenom        String
+  nom           String
+  email         String          @unique
+  telephone     String
+  nationalite   String
+  dateNaissance DateTime?
+  motivation    String
+  cvUrl         String?
+  status        CandidateStatus @default(pending)
+  votes         Vote[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([email])
+  @@index([status])
+}
+
+model Vote {
+  id          String             @id @default(cuid())
+  userId      String
+  candidateId String
+  phase       VotePhase
+  score       Int                @default(1)
+  createdAt   DateTime           @default(now())
+  user        UserAccount        @relation(fields: [userId], references: [id])
+  candidate   EloquenceCandidate @relation(fields: [candidateId], references: [id])
+
+  @@unique([userId, candidateId, phase])
+  @@index([candidateId])
+  @@index([userId])
+}
+
+model EventSlot {
+  id          String   @id @default(cuid())
+  heureDebut  String
+  heureFin    String?
+  titre       String
+  description String?
+  type        String   @default("general")
+  ordre       Int      @default(0)
+  actif       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Speaker {
+  id        String   @id @default(cuid())
+  nom       String
+  titre     String
+  bio       String?
+  photoUrl  String?
+  reseaux   Json?
+  ordre     Int      @default(0)
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Article {
+  id          String    @id @default(cuid())
+  titre       String
+  slug        String    @unique
+  categorie   String
+  contenu     String
+  auteur      String
+  imageUrl    String?
+  publie      Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([publie])
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  titre       String
+  url         String
+  description String?
+  categorie   String   @default("general")
+  createdAt   DateTime @default(now())
+}
+
+model PartnerRequest {
+  id           String   @id @default(cuid())
+  nomComplet   String
+  organisation String
+  email        String
+  message      String
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+
+  @@index([email])
+}
+
+model InstitutionalSupport {
+  id      String  @id @default(cuid())
+  nom     String
+  logoUrl String?
+  mention String?
+  ordre   Int     @default(0)
+  actif   Boolean @default(true)
+}
+
+model AssociationMember {
+  id      String  @id @default(cuid())
+  nom     String
+  logoUrl String?
+  ordre   Int     @default(0)
+  actif   Boolean @default(true)
+}
+
+model Organizer {
+  id          String  @id @default(cuid())
+  nom         String
+  logoUrl     String?
+  description String?
+  ordre       Int     @default(0)
+}
+
+model SiteSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 model ContactRequest {
@@ -77,14 +252,14 @@ model Newsletter {
 }
 
 model EmailLog {
-  id          String   @id @default(cuid())
-  to          String
-  subject     String
-  type        String
-  status      String
-  messageId   String?
-  error       String?
-  sentAt      DateTime @default(now())
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  type      String
+  status    String
+  messageId String?
+  error     String?
+  sentAt    DateTime @default(now())
 
   @@index([to])
   @@index([type])
