@@ -5,6 +5,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'i.vimeocdn.com' },
+      { protocol: 'https', hostname: 'img.youtube.com' },
     ],
   },
   async headers() {

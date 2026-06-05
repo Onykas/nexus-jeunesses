@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, MapPin, Ticket } from 'lucide-react';
 
@@ -11,15 +12,26 @@ export default function HeroHome() {
       aria-label="Section héro principale"
     >
       {/* Background — groupe de jeunes de différentes nationalités */}
+      <div className="absolute inset-0">
+        <Image
+          src="/images/hero.jpeg"
+          alt="Groupe de jeunes du monde réunis"
+          fill
+          priority
+          className="object-cover object-center"
+          style={{ filter: 'brightness(0.9) contrast(1.08) saturate(1.1)' }}
+        />
+      </div>
+      {/* Vignette : bords sombres, centre lumineux, haut et bas lisibles */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1920&q=80')`,
+          background: `
+            radial-gradient(ellipse 80% 70% at 50% 55%, rgba(0,0,0,0) 0%, rgba(10,20,50,0.65) 100%),
+            linear-gradient(to bottom, rgba(10,30,60,0.65) 0%, rgba(0,0,0,0.1) 35%, rgba(0,0,0,0.1) 65%, rgba(10,30,60,0.7) 100%)
+          `,
         }}
-        role="img"
-        aria-label="Groupe de jeunes du monde réunis"
       />
-      <div className="absolute inset-0 hero-overlay" />
 
       {/* Geometric accents */}
       <div className="absolute top-32 right-16 w-48 h-48 bg-brand-red/10 rounded-full blur-3xl pointer-events-none" />
