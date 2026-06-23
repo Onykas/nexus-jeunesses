@@ -31,6 +31,11 @@ interface Video {
 interface EmailLog {
   id: string; to: string; subject: string; type: string; status: string; sentAt: string;
 }
+interface EloCandidate {
+  id: string; prenom: string; nom: string; email: string; telephone: string;
+  nationalite: string; motivation: string | null; cvUrl: string | null;
+  status: string; createdAt: string; _count: { votes: number };
+}
 
 const CATEGORIES_ARTICLE = ['Éloquence', 'Leadership', 'Innovation', 'Culture', 'Actualités', 'Partenariat'];
 
@@ -247,6 +252,7 @@ export default function AdminPage() {
   // Data
   const [stats, setStats] = useState<Stats | null>(null);
   const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
+  const [eloCandidates, setEloCandidates] = useState<EloCandidate[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
@@ -314,6 +320,11 @@ export default function AdminPage() {
     if (res.ok) setEmailLogs(await res.json());
   }, [adminPw]);
 
+  const fetchCandidates = useCallback(async () => {
+    const res = await fetch('/api/candidature-eloquence', { headers: { 'x-admin-password': adminPw } });
+    if (res.ok) setEloCandidates(await res.json());
+  }, [adminPw]);
+
   useEffect(() => {
     if (!auth) return;
     fetchStats();
@@ -324,7 +335,8 @@ export default function AdminPage() {
     if (activeTab === 'medias') { fetchArticles(); fetchVideos(); }
     if (activeTab === 'emails') fetchEmailLogs();
     if (activeTab === 'inscriptions' || activeTab === 'dashboard') fetchStats();
-  }, [auth, activeTab, fetchArticles, fetchVideos, fetchEmailLogs, fetchStats]);
+    if (activeTab === 'spectacle') fetchCandidates();
+  }, [auth, activeTab, fetchArticles, fetchVideos, fetchEmailLogs, fetchStats, fetchCandidates]);
 
   /* ─── Auth ─── */
   const handleLogin = (e: React.FormEvent) => {
@@ -558,23 +570,92 @@ export default function AdminPage() {
           {activeTab === 'spectacle' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <h1 className="font-montserrat font-bold text-navy text-2xl mb-8">Gestion Spectacle</h1>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="card p-6">
-                  <h2 className="font-raleway font-semibold text-navy text-sm mb-4 flex items-center gap-2"><Award size={16} className="text-brand-red" /> Gestion des votes</h2>
-                  <div className="space-y-3">
-                    {[
-                      { label: 'Vote public (Phase 1)', state: votePublic, set: setVotePublic },
-                      { label: 'Vote final (Phase 2 — 11 juillet)', state: voteFinal, set: setVoteFinal },
-                      { label: 'Publier les résultats', state: publishResults, set: setPublishResults },
-                    ].map(({ label, state, set }) => (
-                      <div key={label} className="flex items-center justify-between">
-                        <span className="font-inter text-[#212121]/70 text-sm">{label}</span>
-                        <button onClick={() => set(!state)} className={`transition-colors ${state ? 'text-brand-green' : 'text-[#212121]/30'}`}>
-                          {state ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+
+              {/* Votes */}
+              <div className="card p-6 mb-8 max-w-sm">
+                <h2 className="font-raleway font-semibold text-navy text-sm mb-4 flex items-center gap-2">
+                  <Award size={16} className="text-brand-red" /> Gestion des votes
+                </h2>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Vote public (Phase 1)', state: votePublic, set: setVotePublic },
+                    { label: 'Vote final (Phase 2 — 11 juillet)', state: voteFinal, set: setVoteFinal },
+                    { label: 'Publier les résultats', state: publishResults, set: setPublishResults },
+                  ].map(({ label, state, set }) => (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className="font-inter text-[#212121]/70 text-sm">{label}</span>
+                      <button onClick={() => set(!state)} className={`transition-colors ${state ? 'text-brand-green' : 'text-[#212121]/30'}`}>
+                        {state ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Candidats éloquence */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-montserrat font-bold text-navy text-lg">Candidatures éloquence</h2>
+                  <p className="font-inter text-[#212121]/50 text-sm">{eloCandidates.length} candidature{eloCandidates.length !== 1 ? 's' : ''}</p>
+                </div>
+                <button onClick={fetchCandidates} className="btn-secondary flex items-center gap-2 text-sm">
+                  <RefreshCw size={14} /> Actualiser
+                </button>
+              </div>
+
+              <div className="card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {['Candidat', 'Email', 'Téléphone', 'Nationalité', 'Motivation', 'Vidéo', 'Statut', 'Date'].map(h => (
+                          <th key={h} className="px-4 py-3 text-left font-raleway font-semibold text-[#212121]/50 text-xs">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {eloCandidates.map((c) => (
+                        <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 font-inter text-navy text-xs font-medium whitespace-nowrap">{c.prenom} {c.nom}</td>
+                          <td className="px-4 py-3 text-xs">
+                            <a href={`mailto:${c.email}`} className="text-brand-red hover:underline font-inter">{c.email}</a>
+                          </td>
+                          <td className="px-4 py-3 font-inter text-[#212121]/60 text-xs whitespace-nowrap">{c.telephone}</td>
+                          <td className="px-4 py-3 font-inter text-[#212121]/60 text-xs">{c.nationalite}</td>
+                          <td className="px-4 py-3 font-inter text-[#212121]/50 text-xs max-w-[180px]">
+                            <span className="line-clamp-2">{c.motivation ?? <span className="italic text-[#212121]/30">—</span>}</span>
+                          </td>
+                          <td className="px-4 py-3 text-xs">
+                            {c.cvUrl ? (
+                              <a href={c.cvUrl} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 bg-brand-red/10 text-brand-red font-semibold px-3 py-1 rounded-full hover:bg-brand-red/20 transition whitespace-nowrap">
+                                ▶ Voir la vidéo
+                              </a>
+                            ) : (
+                              <span className="text-[#212121]/30 italic">Non disponible</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`badge text-xs ${
+                              c.status === 'validated' ? 'bg-brand-green/10 text-brand-green' :
+                              c.status === 'rejected'  ? 'bg-brand-red/10 text-brand-red' :
+                              'bg-brand-orange/10 text-brand-orange'
+                            }`}>
+                              {c.status === 'validated' ? '✓ Validé' : c.status === 'rejected' ? '✗ Refusé' : '⏳ En attente'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-inter text-[#212121]/40 text-xs whitespace-nowrap">
+                            {new Date(c.createdAt).toLocaleDateString('fr-FR')}
+                          </td>
+                        </tr>
+                      ))}
+                      {eloCandidates.length === 0 && (
+                        <tr><td colSpan={8} className="px-4 py-10 text-center font-inter text-[#212121]/40 text-sm">
+                          Aucune candidature reçue pour l'instant
+                        </td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </motion.div>

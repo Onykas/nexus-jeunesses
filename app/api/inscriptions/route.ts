@@ -82,14 +82,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (consentEmail !== 'false') {
-      await sendConfirmationEmail({
-        prenom,
-        nom,
-        email,
-        telephone,
-        nationalite,
-        role,
-      }).catch((e) => console.error('Email send failed:', e));
+      try {
+        const emailResult = await sendConfirmationEmail({ prenom, nom, email, telephone, nationalite, role });
+        console.log('[inscription] email envoyé:', emailResult);
+      } catch (emailErr) {
+        const msg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+        console.error('[inscription] ÉCHEC email:', msg);
+        console.error('[inscription] RESEND_API_KEY définie:', !!process.env.RESEND_API_KEY);
+        console.error('[inscription] FROM_EMAIL:', process.env.FROM_EMAIL || '(fallback contact@nexusjeunesses.org)');
+      }
     }
 
     const ics = generateICalendar({
@@ -106,9 +107,18 @@ export async function POST(req: NextRequest) {
       message: 'Inscription confirmée. Email de confirmation envoyé.',
       ics,
     });
-  } catch (err) {
-    console.error('[inscription]', err);
-    return NextResponse.json({ error: 'Erreur serveur. Veuillez réessayer.' }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[inscription] erreur:', message);
+
+    if (message.includes('connect') || message.includes('ECONNREFUSED') || message.includes('DATABASE_URL')) {
+      console.error('[inscription] DATABASE_URL:', process.env.DATABASE_URL ? 'définie' : 'MANQUANTE');
+      return NextResponse.json({ error: 'Base de données inaccessible. Contactez l\'administrateur.' }, { status: 503 });
+    }
+    if (message.includes('Unique constraint') || message.includes('unique')) {
+      return NextResponse.json({ error: 'Un compte avec cet email existe déjà.' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Erreur serveur. Veuillez réessayer.', detail: process.env.NODE_ENV !== 'production' ? message : undefined }, { status: 500 });
   }
 }
 

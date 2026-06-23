@@ -174,7 +174,7 @@ export default function SpectaclePage() {
               <div className="max-w-3xl mx-auto">
                 {/* Intervenants */}
                 <AnimatedSection className="mb-14">
-                  <h2 className="section-title text-2xl mb-2">Intervenants TED X-style</h2>
+                  <h2 className="section-title text-2xl mb-2">Intervenants NEXUS TALK</h2>
                   <p className="section-subtitle mb-6 text-sm">3 speakers inspirants pour 3 sujets qui transforment.</p>
                   <div className="grid md:grid-cols-3 gap-4">
                     {[1, 2, 3].map((i) => (

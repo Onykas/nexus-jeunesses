@@ -9,7 +9,7 @@ const modules = [
     title: 'NEXUS SPECTACLE',
     tagline: 'Cœur culturel & intellectuel',
     description:
-      "Concours d'éloquence, performances et interventions TED X-style. L'événement phare du 11 juillet 2026.",
+      "Concours d'éloquence, performances et interventions NEXUS TALK. L'événement phare du 11 juillet 2026.",
     cta: "S'inscrire — Gratuit",
     ctaHref: '/spectacle#inscription',
     accent: '#D32F2F',

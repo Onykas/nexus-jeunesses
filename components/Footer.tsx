@@ -40,7 +40,7 @@ export default function Footer() {
               Se réunir pour l&apos;avenir.
             </p>
             <p className="font-inter text-white/50 text-xs leading-relaxed">
-              Le premier et seul programme d&apos;une année qui réunit la jeunesse du monde présenté au Maroc.
+              Le premier et seul programme d&apos;une année qui réunit la jeunesse du monde présente au Maroc.
             </p>
           </div>
 

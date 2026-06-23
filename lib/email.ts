@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM = process.env.FROM_EMAIL || 'NEXUS JEUNESSES <noreply@nexusjeunesses.org>';
+const FROM = process.env.FROM_EMAIL || 'NEXUS JEUNESSES <contact@nexusjeunesses.org>';
 
 export interface InscriptionData {
   prenom: string;
@@ -52,8 +52,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${prehead
       <p>NEXUS JEUNESSES — UESCOM · Speak To Lead · CESAM</p>
       <p>Théâtre INSMAC, Rabat, Maroc</p>
       <p>+212 7 15 79 59 62</p>
-      <p style="margin-top:12px;font-size:11px;">Vous recevez cet email car vous vous êtes inscrit(e) à NEXUS SPECTACLE.<br/>
-      <a href="{{unsubscribe_url}}" style="color:#999;">Se désabonner</a></p>
+      <p style="margin-top:12px;font-size:11px;">Vous recevez cet email car vous vous êtes inscrit(e) à NEXUS SPECTACLE.</p>
     </div>
   </div>
 </div>
@@ -78,6 +77,14 @@ export async function sendConfirmationEmail(data: InscriptionData) {
     </div>
     <p class="text">Ajoutez l'événement à votre calendrier :</p>
     <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=NEXUS+SPECTACLE&dates=20260711T160000Z/20260711T200000Z&details=Inscription+confirm%C3%A9e&location=Th%C3%A9%C3%A2tre+Mohamed+Bahnini+Rabat" class="btn">📅 Google Calendar</a>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0;text-align:center;">
+      <p style="font-size:15px;font-weight:700;color:#15803d;margin:0 0 8px;">💬 Rejoignez notre groupe WhatsApp NEXUS</p>
+      <p style="font-size:14px;color:#444;margin:0 0 16px;">Restez informé(e) de toutes les actualités et préparez-vous avec la communauté :</p>
+      <a href="https://chat.whatsapp.com/FvbLrzGwxDS9ThyoApsz6M?mode=gi_t"
+         style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;">
+        📱 Rejoindre le groupe WhatsApp
+      </a>
+    </div>
     <p class="text" style="margin-top:24px;">
       La jeunesse ne subit plus. Elle éclaire.<br/>
       <span class="accent">À très bientôt à Rabat.</span>
@@ -106,7 +113,7 @@ export async function sendReminderEmail(
     14: {
       subject: `NEXUS SPECTACLE dans 2 semaines — Voici le programme`,
       headline: `Le programme complet est là ⚡`,
-      body: `Eloquentia 2.0, 3 interventions TED X-style, performance de danse culturelle. Dans 14 jours, vous serez au cœur de l'action.`,
+      body: `Eloquentia 2.0, 3 interventions NEXUS TALK, performance de danse culturelle. Dans 14 jours, vous serez au cœur de l'action.`,
     },
     7: {
       subject: `Une semaine. Préparez-vous à être illuminé(e)s.`,
@@ -155,5 +162,72 @@ export async function sendAdminNotification(subject: string, body: string) {
     to: adminEmail,
     subject: `[NEXUS Admin] ${subject}`,
     html: baseTemplate(`<p class="title">${subject}</p><p class="text">${body}</p>`),
+  });
+}
+
+export interface CandidatureData {
+  prenom: string;
+  nom: string;
+  email: string;
+  telephone: string;
+  nationalite: string;
+  motivation?: string;
+  videoUrl?: string;
+}
+
+export async function sendCandidatureConfirmation(data: CandidatureData) {
+  const content = `
+    <p class="title">Candidature reçue avec succès ! 🎉</p>
+    <p class="text">Bonjour <strong>${data.prenom}</strong>,</p>
+    <p class="text">
+      Votre candidature au <span class="accent">Concours d'Éloquence NEXUS SPECTACLE</span> a bien été reçue.
+      L'équipe NEXUS examinera votre dossier et vous contactera prochainement.
+    </p>
+    <div class="info-box">
+      <div class="info-row"><span>Nom</span><strong>${data.prenom} ${data.nom}</strong></div>
+      <div class="info-row"><span>Email</span><strong>${data.email}</strong></div>
+      <div class="info-row"><span>Téléphone</span><strong>${data.telephone}</strong></div>
+      <div class="info-row" style="border:none"><span>Nationalité</span><strong>${data.nationalite}</strong></div>
+    </div>
+    <p class="text">
+      La jeunesse ne subit plus. Elle éclaire.<br/>
+      <span class="accent">Bonne chance !</span>
+    </p>
+    <p class="text" style="color:#999;font-size:13px;">L'équipe NEXUS JEUNESSES</p>
+  `;
+  return resend.emails.send({
+    from: FROM,
+    to: data.email,
+    subject: '✅ Candidature reçue — Concours d\'Éloquence NEXUS SPECTACLE',
+    html: baseTemplate(content, `Votre candidature au concours d'éloquence NEXUS a été reçue, ${data.prenom} !`),
+  });
+}
+
+export async function sendCandidatureNotifAdmin(data: CandidatureData) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return;
+
+  const videoSection = data.videoUrl
+    ? `<div class="info-row"><span>Vidéo</span><a href="${data.videoUrl}" style="color:#D32F2F;font-weight:700;">▶ Voir la vidéo</a></div>`
+    : `<div class="info-row"><span>Vidéo</span><strong style="color:#999;">Non disponible</strong></div>`;
+
+  const content = `
+    <p class="title">Nouvelle candidature éloquence</p>
+    <p class="text">Une nouvelle candidature vient d'être soumise :</p>
+    <div class="info-box">
+      <div class="info-row"><span>Nom</span><strong>${data.prenom} ${data.nom}</strong></div>
+      <div class="info-row"><span>Email</span><a href="mailto:${data.email}" style="color:#D32F2F;font-weight:700;">${data.email}</a></div>
+      <div class="info-row"><span>Téléphone</span><strong>${data.telephone}</strong></div>
+      <div class="info-row"><span>Nationalité</span><strong>${data.nationalite}</strong></div>
+      ${data.motivation ? `<div class="info-row"><span>Motivation</span><strong>${data.motivation}</strong></div>` : ''}
+      ${videoSection}
+    </div>
+    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://nexusjeunesses.org'}/admin" class="btn">Voir dans l'admin →</a>
+  `;
+  return resend.emails.send({
+    from: FROM,
+    to: adminEmail,
+    subject: `[NEXUS] Nouvelle candidature — ${data.prenom} ${data.nom}`,
+    html: baseTemplate(content),
   });
 }

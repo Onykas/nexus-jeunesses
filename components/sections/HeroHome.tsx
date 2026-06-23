@@ -57,7 +57,7 @@ export default function HeroHome() {
           className="font-raleway text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
           NEXUS DES JEUNESSES est le premier et seul programme d'une année qui
-          réunit la jeunesse du monde présenté au Maroc.
+          réunit la jeunesse du monde présente au Maroc.
         </motion.p>
 
         {/* Event info */}

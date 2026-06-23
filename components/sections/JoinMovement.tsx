@@ -14,7 +14,7 @@ const reasons = [
   {
     icon: Zap,
     title: 'Inspiration profonde',
-    desc: 'Eloquentia, TED X, danse culturelle — un programme qui transforme.',
+    desc: 'Eloquentia, NEXUS TALK, danse culturelle — un programme qui transforme.',
   },
   {
     icon: Users,

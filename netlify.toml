@@ -7,3 +7,5 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NEXT_PUBLIC_APP_URL = "https://nexusjeunesses.org"
+  NEXT_PUBLIC_EVENT_DATE = "2026-07-11T15:00:00+01:00"
