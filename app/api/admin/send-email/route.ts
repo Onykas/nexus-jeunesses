@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.FROM_EMAIL || 'NEXUS JEUNESSES <noreply@nexusjeunesses.org>';
+import { sendBulkEmail } from '@/lib/email';
 
 function requireAdmin(req: NextRequest) {
   const pw = req.headers.get('x-admin-password');
@@ -68,38 +65,19 @@ export async function POST(req: NextRequest) {
     }
 
     const html = buildHtml(sujet, contenu);
-    let sent = 0;
-    const errors: string[] = [];
-
-    // Resend batch limit: 100 per request
-    for (let i = 0; i < emails.length; i += 50) {
-      const batch = emails.slice(i, i + 50);
-      const results = await Promise.allSettled(
-        batch.map((email) =>
-          resend.emails.send({ from: FROM, to: email, subject: sujet, html })
-        )
-      );
-      results.forEach((r, idx) => {
-        if (r.status === 'fulfilled' && !r.value.error) {
-          sent++;
-        } else {
-          const msg = r.status === 'rejected' ? r.reason?.message : r.value.error?.message;
-          errors.push(`${batch[idx]}: ${msg}`);
-        }
-      });
-    }
+    const { sent, failed } = await sendBulkEmail(emails, sujet, html);
 
     await prisma.emailLog.create({
       data: {
-        to: `${destinataires} (${sent} destinataires)`,
+        to: `${destinataires} (${sent}/${emails.length} destinataires)`,
         subject: sujet,
         type: 'bulk',
-        status: 'sent',
+        status: sent > 0 ? 'sent' : 'failed',
         messageId: `bulk-${Date.now()}`,
       },
     });
 
-    return NextResponse.json({ ok: true, sent, errors: errors.length ? errors : undefined });
+    return NextResponse.json({ ok: true, sent, failed });
   } catch (err) {
     console.error('[admin/send-email]', err);
     return NextResponse.json({ error: 'Erreur lors de l\'envoi' }, { status: 500 });

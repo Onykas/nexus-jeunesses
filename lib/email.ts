@@ -1,8 +1,18 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getTransporter() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) throw new Error('GMAIL_USER ou GMAIL_APP_PASSWORD manquant');
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+  });
+}
 
-const FROM = process.env.FROM_EMAIL || 'NEXUS JEUNESSES <contact@nexusjeunesses.org>';
+const FROM_NAME = 'NEXUS JEUNESSES';
 
 export interface InscriptionData {
   prenom: string;
@@ -60,6 +70,12 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${prehead
 </html>`;
 }
 
+async function sendMail(to: string, subject: string, html: string) {
+  const transporter = getTransporter();
+  const from = `${FROM_NAME} <${process.env.GMAIL_USER}>`;
+  return transporter.sendMail({ from, to, subject, html });
+}
+
 export async function sendConfirmationEmail(data: InscriptionData) {
   const content = `
     <p class="title">Votre inscription est confirmée ! 🎉</p>
@@ -91,13 +107,11 @@ export async function sendConfirmationEmail(data: InscriptionData) {
     </p>
     <p class="text" style="color:#999;font-size:13px;">L'équipe NEXUS JEUNESSES</p>
   `;
-
-  return resend.emails.send({
-    from: FROM,
-    to: data.email,
-    subject: `✅ Inscription confirmée — NEXUS SPECTACLE 11 Juillet 2026`,
-    html: baseTemplate(content, `Votre place au NEXUS SPECTACLE est confirmée, ${data.prenom} !`),
-  });
+  return sendMail(
+    data.email,
+    `✅ Inscription confirmée — NEXUS SPECTACLE 11 Juillet 2026`,
+    baseTemplate(content, `Votre place au NEXUS SPECTACLE est confirmée, ${data.prenom} !`)
+  );
 }
 
 export async function sendReminderEmail(
@@ -145,24 +159,17 @@ export async function sendReminderEmail(
     </div>
     <a href="${process.env.NEXT_PUBLIC_APP_URL}/spectacle" class="btn">Voir le programme →</a>
   `;
-
-  return resend.emails.send({
-    from: FROM,
-    to: data.email,
-    subject: copy.subject,
-    html: baseTemplate(content),
-  });
+  return sendMail(data.email, copy.subject, baseTemplate(content));
 }
 
 export async function sendAdminNotification(subject: string, body: string) {
   const adminEmail = process.env.ADMIN_EMAIL;
   if (!adminEmail) return;
-  return resend.emails.send({
-    from: FROM,
-    to: adminEmail,
-    subject: `[NEXUS Admin] ${subject}`,
-    html: baseTemplate(`<p class="title">${subject}</p><p class="text">${body}</p>`),
-  });
+  return sendMail(
+    adminEmail,
+    `[NEXUS Admin] ${subject}`,
+    baseTemplate(`<p class="title">${subject}</p><p class="text">${body}</p>`)
+  );
 }
 
 export interface CandidatureData {
@@ -195,12 +202,11 @@ export async function sendCandidatureConfirmation(data: CandidatureData) {
     </p>
     <p class="text" style="color:#999;font-size:13px;">L'équipe NEXUS JEUNESSES</p>
   `;
-  return resend.emails.send({
-    from: FROM,
-    to: data.email,
-    subject: '✅ Candidature reçue — Concours d\'Éloquence NEXUS SPECTACLE',
-    html: baseTemplate(content, `Votre candidature au concours d'éloquence NEXUS a été reçue, ${data.prenom} !`),
-  });
+  return sendMail(
+    data.email,
+    `✅ Candidature reçue — Concours d'Éloquence NEXUS SPECTACLE`,
+    baseTemplate(content, `Votre candidature au concours d'éloquence NEXUS a été reçue, ${data.prenom} !`)
+  );
 }
 
 export async function sendCandidatureNotifAdmin(data: CandidatureData) {
@@ -224,10 +230,18 @@ export async function sendCandidatureNotifAdmin(data: CandidatureData) {
     </div>
     <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://nexusjeunesses.org'}/admin" class="btn">Voir dans l'admin →</a>
   `;
-  return resend.emails.send({
-    from: FROM,
-    to: adminEmail,
-    subject: `[NEXUS] Nouvelle candidature — ${data.prenom} ${data.nom}`,
-    html: baseTemplate(content),
-  });
+  return sendMail(
+    adminEmail,
+    `[NEXUS] Nouvelle candidature — ${data.prenom} ${data.nom}`,
+    baseTemplate(content)
+  );
+}
+
+export async function sendBulkEmail(emails: string[], subject: string, html: string) {
+  const results = await Promise.allSettled(
+    emails.map((to) => sendMail(to, subject, html))
+  );
+  const sent = results.filter((r) => r.status === 'fulfilled').length;
+  const failed = results.length - sent;
+  return { sent, failed };
 }
