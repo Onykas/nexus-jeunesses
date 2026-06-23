@@ -69,16 +69,24 @@ export async function POST(req: NextRequest) {
 
     const html = buildHtml(sujet, contenu);
     let sent = 0;
+    const errors: string[] = [];
 
     // Resend batch limit: 100 per request
     for (let i = 0; i < emails.length; i += 50) {
       const batch = emails.slice(i, i + 50);
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
         batch.map((email) =>
           resend.emails.send({ from: FROM, to: email, subject: sujet, html })
         )
       );
-      sent += batch.length;
+      results.forEach((r, idx) => {
+        if (r.status === 'fulfilled' && !r.value.error) {
+          sent++;
+        } else {
+          const msg = r.status === 'rejected' ? r.reason?.message : r.value.error?.message;
+          errors.push(`${batch[idx]}: ${msg}`);
+        }
+      });
     }
 
     await prisma.emailLog.create({
@@ -91,7 +99,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ ok: true, sent });
+    return NextResponse.json({ ok: true, sent, errors: errors.length ? errors : undefined });
   } catch (err) {
     console.error('[admin/send-email]', err);
     return NextResponse.json({ error: 'Erreur lors de l\'envoi' }, { status: 500 });
