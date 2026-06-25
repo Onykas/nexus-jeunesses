@@ -50,10 +50,12 @@ export default function EloquenceCandidatureForm({ onClose }: { onClose: () => v
         method: 'POST',
         body: formData,
       });
-      if (!res.ok) throw new Error();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
       setDone(true);
-    } catch {
-      setVideoError("Erreur lors de l'envoi. Veuillez réessayer.");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur lors de l'envoi.";
+      setVideoError(msg);
     }
   };
 
