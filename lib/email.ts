@@ -2,8 +2,8 @@ import nodemailer from 'nodemailer';
 
 function getTransporter() {
   const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!user || !pass) throw new Error('GMAIL_USER ou GMAIL_APP_PASSWORD manquant');
+  const pass = process.env.GMAIL_PASS;
+  if (!user || !pass) throw new Error('GMAIL_USER ou GMAIL_PASS manquant');
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
