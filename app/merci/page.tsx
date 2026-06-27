@@ -19,7 +19,7 @@ export default function MerciPage() {
         <div className="bg-white rounded-2xl p-6 shadow-card mb-8">
           <div className="font-montserrat font-bold text-navy text-lg mb-2">NEXUS SPECTACLE</div>
           <div className="font-inter text-[#212121]/60">11 Juillet 2026 · 18h00</div>
-          <div className="font-inter text-[#212121]/60">Théâtre Mohamed Bahnini, Rabat</div>
+          <div className="font-inter text-[#212121]/60">INSMAC, Rabat</div>
         </div>
         <div className="flex flex-wrap gap-4 justify-center">
           <Link href="/" className="btn-secondary flex items-center gap-2">

@@ -5,199 +5,271 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, ChevronLeft, Loader2, Upload } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Loader2, Upload, X, Lock, UserCircle2 } from 'lucide-react';
 import { toast } from '@/components/ui/Toaster';
 import { countries } from '@/lib/countries';
 
-const roleOptions = [
-  { value: 'spectateur', label: 'Spectateur', desc: 'Assister à l\'événement en tant que public', icon: '👁️' },
-  { value: 'volontaire', label: 'Volontaire', desc: 'Rejoindre l\'équipe organisatrice sur place', icon: '🤝' },
-  { value: 'partenaire', label: 'Partenaire', desc: 'Soutenir l\'événement en tant que partenaire', icon: '🏢' },
-  { value: 'media', label: 'Média', desc: 'Couvrir l\'événement (accréditation requise)', icon: '📷' },
+const SUJETS = [
+  'Les réseaux sociaux rapprochent-ils réellement les peuples ?',
+  'La liberté d\'expression doit-elle avoir des limites ?',
+  'L\'Afrique doit-elle suivre son propre modèle de développement ?',
+  'Les réseaux sociaux donnent-ils une voix à tous ou créent-ils de nouvelles formes de silence ?',
+  'L\'échec est-il une étape indispensable vers la réussite ?',
+  'Si les jeunes dirigeaient le monde que changerait-il ?',
+  'Sommes-nous véritablement libre de nos choix ?',
+  'Le progrès rend-il l\'humanité meilleure ?',
+  'Faut-il protéger les cultures locales face à la mondialisation ?',
+  'Les mots ont le pouvoir de guérir et de détruire.',
+  'La parole est le miroir de la pensée.',
+  'Celui qui ouvre une école ferme une prison.',
+  'Une génération instruite vaut plus qu\'une génération assistée.',
+  'Une culture ne s\'enrichit qu\'au contact d\'une autre.',
 ];
 
-const step1Schema = z.object({ role: z.string().min(1, 'Veuillez choisir un rôle') });
+const roleOptions = [
+  {
+    value: 'participant',
+    label: 'Participant',
+    desc: 'Assister au NEXUS SPECTACLE en tant que public',
+    icon: '👁️',
+  },
+  {
+    value: 'candidat',
+    label: 'Candidat au Concours d\'Éloquence',
+    desc: 'S\'inscrire pour participer au concours et monter sur scène',
+    icon: '🎤',
+  },
+];
 
-const step2Schema = z.object({
+const accountSchema = z.object({
+  email: z.string().email('Email invalide'),
+  password: z.string().min(8, 'Minimum 8 caractères'),
+  confirmPassword: z.string(),
+}).refine((d) => d.password === d.confirmPassword, {
+  message: 'Les mots de passe ne correspondent pas',
+  path: ['confirmPassword'],
+});
+
+const infoSchema = z.object({
   prenom: z.string().min(2, 'Prénom requis (min. 2 caractères)'),
   nom: z.string().min(2, 'Nom requis (min. 2 caractères)'),
-  email: z.string().email('Email invalide'),
   telephone: z.string().min(8, 'Téléphone invalide').regex(/^\+?[0-9\s\-()]+$/, 'Format invalide'),
   nationalite: z.string().min(1, 'Nationalité requise'),
   dateNaissance: z.string().min(1, 'Date de naissance requise'),
 });
 
-const step3BaseSchema = z.object({
+const candidatSchema = z.object({
+  ville: z.string().min(1, 'Ville requise'),
+  profession: z.string().min(1, 'Profession requise'),
+  sujet: z.string().min(1, 'Veuillez choisir un sujet'),
   motivation: z.string().max(500, 'Maximum 500 caractères').optional(),
-  organisation: z.string().optional(),
-  secteur: z.string().optional(),
-  nomMedia: z.string().optional(),
-  typeMedia: z.string().optional(),
-  lienPublication: z.string().optional(),
-  consentEmail: z.boolean().optional(),
-  consentSMS: z.boolean().optional(),
-  consentWhatsapp: z.boolean().optional(),
 });
 
-type FormData = z.infer<typeof step1Schema> &
-  z.infer<typeof step2Schema> &
-  z.infer<typeof step3BaseSchema> & { rgpd: boolean };
-
-const secteurs = [
-  'Culture & Arts', 'Diplomatie', 'Éducation & Recherche', 'Entrepreneuriat',
-  'Finance & Économie', 'Humanitaire', 'Médias & Communication', 'Politique & Gouvernance',
-  'Santé', 'Technologie & Innovation', 'Autre',
-];
-
-const typesMedia = ['Presse écrite', 'Télévision', 'Radio', 'Web / Numérique', 'Podcast', 'Autre'];
+type AccountData = z.infer<typeof accountSchema>;
+type InfoData = z.infer<typeof infoSchema>;
+type CandidatData = z.infer<typeof candidatSchema>;
 
 export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void }) {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<Partial<FormData>>({});
+  const [step, setStep] = useState(0);
+  const [role, setRole] = useState<'participant' | 'candidat' | ''>('');
+  const [accountData, setAccountData] = useState<{ email: string; password: string } | null>(null);
+  const [infoData, setInfoData] = useState<Partial<InfoData>>({});
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cvFile, setCvFile] = useState<File | null>(null);
-  const [volunteerPlaces] = useState(12);
+  const [rgpd, setRgpd] = useState(false);
 
-  const totalSteps = 4;
+  // participant: steps 0→1→2→3(confirmation) = 4 steps
+  // candidat:   steps 0→1→2→3(concours)→4(confirmation) = 5 steps
+  const totalSteps = role === 'candidat' ? 5 : 4;
 
-  const step1Form = useForm<z.infer<typeof step1Schema>>({
-    resolver: zodResolver(step1Schema),
-    defaultValues: { role: formData.role || '' },
+  const accountForm = useForm<AccountData>({
+    resolver: zodResolver(accountSchema),
   });
 
-  const step2Form = useForm<z.infer<typeof step2Schema>>({
-    resolver: zodResolver(step2Schema),
-    defaultValues: {
-      prenom: formData.prenom || '',
-      nom: formData.nom || '',
-      email: formData.email || '',
-      telephone: formData.telephone || '',
-      nationalite: formData.nationalite || '',
-      dateNaissance: formData.dateNaissance || '',
-    },
+  const infoForm = useForm<InfoData>({
+    resolver: zodResolver(infoSchema),
+    defaultValues: infoData,
   });
 
-  const step3Form = useForm<z.infer<typeof step3BaseSchema>>({
-    defaultValues: { motivation: formData.motivation || '' },
+  const candidatForm = useForm<CandidatData>({
+    resolver: zodResolver(candidatSchema),
   });
 
-  const currentRole = formData.role || step1Form.watch('role');
+  /* ── STEP 0 : compte ── */
+  const handleStep0 = accountForm.handleSubmit((data) => {
+    setAccountData({ email: data.email, password: data.password });
+    infoForm.setValue('prenom', infoData.prenom ?? '');
+    setStep(1);
+  });
 
-  const handleStep1 = step1Form.handleSubmit((data) => {
-    setFormData((prev) => ({ ...prev, ...data }));
+  /* ── STEP 1 : rôle ── */
+  const handleStep1 = () => {
+    if (!role) { toast('Veuillez choisir un rôle.', 'error'); return; }
     setStep(2);
+  };
+
+  /* ── STEP 2 : infos ── */
+  const handleStep2 = infoForm.handleSubmit((data) => {
+    setInfoData(data);
+    setStep(role === 'candidat' ? 3 : 4);
   });
 
-  const handleStep2 = step2Form.handleSubmit((data) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-    setStep(3);
-  });
-
-  const handleStep3 = step3Form.handleSubmit((data) => {
-    setFormData((prev) => ({ ...prev, ...data }));
+  /* ── STEP 3 : candidature ── */
+  const handleStep3Candidat = candidatForm.handleSubmit(() => {
     setStep(4);
   });
 
-  const handleSubmit = async () => {
-    if (!(formData as any).rgpd) {
-      toast('Veuillez accepter les conditions d\'utilisation.', 'error');
-      return;
-    }
-    if (formData.role === 'volontaire' && !cvFile) {
-      toast('Veuillez uploader votre CV (PDF).', 'error');
-      return;
-    }
+  /* ── Soumission finale ── */
+  const finalSubmit = async () => {
+    if (!rgpd) { toast('Veuillez accepter les conditions.', 'error'); return; }
     setIsSubmitting(true);
     try {
-      const body = new FormData();
-      Object.entries(formData).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) body.append(k, String(v));
-      });
-      if (cvFile) body.append('cv', cvFile);
+      // 1. Créer le compte NEXUS (ou se connecter si déjà existant)
+      if (accountData) {
+        const regRes = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prenom: infoData.prenom,
+            nom: infoData.nom,
+            email: accountData.email,
+            password: accountData.password,
+            nationalite: infoData.nationalite,
+            dateNaissance: infoData.dateNaissance,
+          }),
+        });
+        // Connecter l'utilisateur dans tous les cas (nouveau compte ou existant)
+        await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: accountData.email, password: accountData.password }),
+        });
+      }
 
-      const res = await fetch('/api/inscriptions', {
-        method: 'POST',
-        body,
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur serveur');
-      toast('Inscription confirmée ! Vérifiez votre email.', 'success');
+      // 2. Soumettre l'inscription ou la candidature
+      if (role === 'participant') {
+        const body = new FormData();
+        body.append('role', 'spectateur');
+        body.append('rgpd', 'true');
+        body.append('email', accountData?.email ?? '');
+        Object.entries(infoData).forEach(([k, v]) => v != null && body.append(k, String(v)));
+        const res = await fetch('/api/inscriptions', { method: 'POST', body });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
+      } else {
+        const cd = candidatForm.getValues();
+        const body = new FormData();
+        body.append('email', accountData?.email ?? '');
+        Object.entries(infoData).forEach(([k, v]) => v != null && body.append(k, String(v)));
+        body.append('ville', cd.ville);
+        body.append('profession', cd.profession);
+        body.append('sujet', cd.sujet);
+        if (cd.motivation) body.append('motivation', cd.motivation);
+        if (videoFile) body.append('video', videoFile);
+        const res = await fetch('/api/candidature-eloquence', { method: 'POST', body });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
+      }
+
+      toast(
+        role === 'candidat'
+          ? 'Candidature envoyée ! Vérifiez votre email.'
+          : 'Inscription confirmée ! Vérifiez votre email.',
+        'success'
+      );
       onSuccess?.();
-    } catch (err: any) {
-      toast(err.message || 'Une erreur est survenue.', 'error');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Une erreur est survenue.';
+      toast(msg, 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const stepLabels = role === 'candidat'
+    ? ['Compte', 'Rôle', 'Infos', 'Concours', 'Confirmation']
+    : ['Compte', 'Rôle', 'Infos', 'Confirmation'];
+
   return (
     <div className="w-full max-w-lg mx-auto">
-      {/* Progress bar */}
+      {/* Progress */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div key={i} className="flex items-center flex-1">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 flex-shrink-0 ${
-                  i + 1 < step
-                    ? 'bg-brand-green text-white'
-                    : i + 1 === step
-                    ? 'bg-navy text-white'
-                    : 'bg-gray-100 text-gray-400'
-                }`}
-              >
-                {i + 1 < step ? <Check size={14} /> : i + 1}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 flex-shrink-0 ${
+                i < step ? 'bg-brand-green text-white' : i === step ? 'bg-navy text-white' : 'bg-gray-100 text-gray-400'
+              }`}>
+                {i < step ? <Check size={14} /> : i + 1}
               </div>
               {i < totalSteps - 1 && (
-                <div className={`flex-1 h-1 mx-1 rounded transition-all duration-500 ${i + 1 < step ? 'bg-brand-green' : 'bg-gray-100'}`} />
+                <div className={`flex-1 h-1 mx-1 rounded transition-all duration-500 ${i < step ? 'bg-brand-green' : 'bg-gray-100'}`} />
               )}
             </div>
           ))}
         </div>
         <div className="flex justify-between text-xs text-[#212121]/50 font-inter mt-1">
-          <span>Rôle</span>
-          <span>Infos</span>
-          <span>Détails</span>
-          <span>Confirmation</span>
+          {stepLabels.map((l) => <span key={l}>{l}</span>)}
         </div>
       </div>
 
       <AnimatePresence mode="wait">
-        {/* STEP 1 — Role */}
-        {step === 1 && (
-          <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <h3 className="font-montserrat font-bold text-navy text-xl mb-2">Je souhaite participer en tant que…</h3>
-            <p className="font-inter text-[#212121]/60 text-sm mb-6">Choisissez le rôle qui vous correspond.</p>
-            <form onSubmit={handleStep1} className="space-y-3">
-              {roleOptions.map(({ value, label, desc, icon }) => {
-                const selected = step1Form.watch('role') === value;
-                return (
-                  <label
-                    key={value}
-                    className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                      selected ? 'border-navy bg-navy/5' : 'border-gray-100 hover:border-gray-200'
-                    }`}
-                  >
-                    <input type="radio" value={value} {...step1Form.register('role')} className="sr-only" />
-                    <span className="text-2xl">{icon}</span>
-                    <div className="flex-1">
-                      <div className="font-raleway font-semibold text-navy text-sm">{label}</div>
-                      <div className="font-inter text-[#212121]/55 text-xs">{desc}</div>
-                      {value === 'volontaire' && (
-                        <div className="font-inter text-brand-orange text-xs mt-0.5">
-                          {volunteerPlaces} place{volunteerPlaces !== 1 ? 's' : ''} restante{volunteerPlaces !== 1 ? 's' : ''} dans l'équipe
-                        </div>
-                      )}
-                    </div>
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? 'border-navy bg-navy' : 'border-gray-300'}`}>
-                      {selected && <div className="w-2 h-2 rounded-full bg-white" />}
-                    </div>
-                  </label>
-                );
-              })}
-              {step1Form.formState.errors.role && (
-                <p className="text-brand-red text-xs font-inter">{step1Form.formState.errors.role.message}</p>
-              )}
+
+        {/* ── STEP 0 — Compte NEXUS ── */}
+        {step === 0 && (
+          <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <div className="flex items-center gap-2 mb-2">
+              <UserCircle2 size={20} className="text-brand-red" />
+              <h3 className="font-montserrat font-bold text-navy text-xl">Créer votre compte NEXUS</h3>
+            </div>
+            <p className="font-inter text-[#212121]/60 text-sm mb-6">
+              Votre compte vous permettra de vous connecter et de voter pour les candidats.
+            </p>
+            <form onSubmit={handleStep0} className="space-y-4">
+              <div>
+                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Email *</label>
+                <input
+                  {...accountForm.register('email')}
+                  type="email"
+                  className="input-field"
+                  placeholder="votre@email.com"
+                  autoComplete="email"
+                />
+                {accountForm.formState.errors.email && (
+                  <p className="text-brand-red text-xs mt-1">{accountForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="font-inter text-xs text-[#212121]/60 mb-1 flex items-center gap-1">
+                  <Lock size={11} /> Mot de passe * (min. 8 caractères)
+                </label>
+                <input
+                  {...accountForm.register('password')}
+                  type="password"
+                  className="input-field"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+                {accountForm.formState.errors.password && (
+                  <p className="text-brand-red text-xs mt-1">{accountForm.formState.errors.password.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Confirmer le mot de passe *</label>
+                <input
+                  {...accountForm.register('confirmPassword')}
+                  type="password"
+                  className="input-field"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+                {accountForm.formState.errors.confirmPassword && (
+                  <p className="text-brand-red text-xs mt-1">{accountForm.formState.errors.confirmPassword.message}</p>
+                )}
+              </div>
+              <p className="font-inter text-xs text-[#212121]/40 leading-relaxed">
+                Si vous avez déjà un compte NEXUS, entrez le même email et mot de passe — vous serez reconnecté automatiquement.
+              </p>
               <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2 mt-2">
                 Continuer <ChevronRight size={16} />
               </button>
@@ -205,46 +277,89 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
           </motion.div>
         )}
 
-        {/* STEP 2 — Personal info */}
+        {/* ── STEP 1 — Rôle ── */}
+        {step === 1 && (
+          <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <h3 className="font-montserrat font-bold text-navy text-xl mb-2">Je souhaite…</h3>
+            <p className="font-inter text-[#212121]/60 text-sm mb-6">Choisissez votre rôle pour l'événement du 11 juillet.</p>
+            <div className="space-y-3 mb-6">
+              {roleOptions.map(({ value, label, desc, icon }) => {
+                const selected = role === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRole(value as 'participant' | 'candidat')}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left cursor-pointer transition-all duration-200 ${
+                      selected ? 'border-navy bg-navy/5' : 'border-gray-100 hover:border-gray-200'
+                    }`}
+                  >
+                    <span className="text-2xl">{icon}</span>
+                    <div className="flex-1">
+                      <div className="font-raleway font-semibold text-navy text-sm">{label}</div>
+                      <div className="font-inter text-[#212121]/55 text-xs">{desc}</div>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? 'border-navy bg-navy' : 'border-gray-300'}`}>
+                      {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setStep(0)} className="btn-secondary flex items-center gap-2 flex-1">
+                <ChevronLeft size={16} /> Retour
+              </button>
+              <button type="button" onClick={handleStep1} className="btn-primary flex items-center justify-center gap-2 flex-1">
+                Continuer <ChevronRight size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── STEP 2 — Infos personnelles ── */}
         {step === 2 && (
           <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <h3 className="font-montserrat font-bold text-navy text-xl mb-2">Vos informations personnelles</h3>
-            <p className="font-inter text-[#212121]/60 text-sm mb-6">Ces données seront utilisées pour votre confirmation.</p>
+            <h3 className="font-montserrat font-bold text-navy text-xl mb-2">Vos informations</h3>
+            <p className="font-inter text-[#212121]/60 text-sm mb-6">Ces données serviront à votre confirmation.</p>
             <form onSubmit={handleStep2} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Prénom *</label>
-                  <input {...step2Form.register('prenom')} className="input-field" placeholder="Prénom" />
-                  {step2Form.formState.errors.prenom && <p className="text-brand-red text-xs mt-1">{step2Form.formState.errors.prenom.message}</p>}
+                  <input {...infoForm.register('prenom')} className="input-field" placeholder="Prénom" />
+                  {infoForm.formState.errors.prenom && <p className="text-brand-red text-xs mt-1">{infoForm.formState.errors.prenom.message}</p>}
                 </div>
                 <div>
                   <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Nom *</label>
-                  <input {...step2Form.register('nom')} className="input-field" placeholder="Nom" />
-                  {step2Form.formState.errors.nom && <p className="text-brand-red text-xs mt-1">{step2Form.formState.errors.nom.message}</p>}
+                  <input {...infoForm.register('nom')} className="input-field" placeholder="Nom" />
+                  {infoForm.formState.errors.nom && <p className="text-brand-red text-xs mt-1">{infoForm.formState.errors.nom.message}</p>}
+                </div>
+              </div>
+              {/* Email depuis le compte — affiché mais non modifiable */}
+              <div>
+                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Email</label>
+                <div className="input-field bg-gray-50 text-[#212121]/60 cursor-not-allowed flex items-center gap-2">
+                  <Lock size={12} className="text-[#212121]/30 flex-shrink-0" />
+                  <span className="text-sm">{accountData?.email}</span>
                 </div>
               </div>
               <div>
-                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Email *</label>
-                <input {...step2Form.register('email')} type="email" className="input-field" placeholder="votre@email.com" />
-                {step2Form.formState.errors.email && <p className="text-brand-red text-xs mt-1">{step2Form.formState.errors.email.message}</p>}
-              </div>
-              <div>
-                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Téléphone * (format international)</label>
-                <input {...step2Form.register('telephone')} type="tel" className="input-field" placeholder="+212 6XX XX XX XX" />
-                {step2Form.formState.errors.telephone && <p className="text-brand-red text-xs mt-1">{step2Form.formState.errors.telephone.message}</p>}
+                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Téléphone *</label>
+                <input {...infoForm.register('telephone')} type="tel" className="input-field" placeholder="+212 6XX XX XX XX" />
+                {infoForm.formState.errors.telephone && <p className="text-brand-red text-xs mt-1">{infoForm.formState.errors.telephone.message}</p>}
               </div>
               <div>
                 <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Nationalité *</label>
-                <select {...step2Form.register('nationalite')} className="input-field bg-transparent">
+                <select {...infoForm.register('nationalite')} className="input-field bg-transparent">
                   <option value="">Sélectionnez votre nationalité</option>
                   {countries.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
-                {step2Form.formState.errors.nationalite && <p className="text-brand-red text-xs mt-1">{step2Form.formState.errors.nationalite.message}</p>}
+                {infoForm.formState.errors.nationalite && <p className="text-brand-red text-xs mt-1">{infoForm.formState.errors.nationalite.message}</p>}
               </div>
               <div>
                 <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Date de naissance *</label>
-                <input {...step2Form.register('dateNaissance')} type="date" className="input-field" />
-                {step2Form.formState.errors.dateNaissance && <p className="text-brand-red text-xs mt-1">{step2Form.formState.errors.dateNaissance.message}</p>}
+                <input {...infoForm.register('dateNaissance')} type="date" className="input-field" />
+                {infoForm.formState.errors.dateNaissance && <p className="text-brand-red text-xs mt-1">{infoForm.formState.errors.dateNaissance.message}</p>}
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setStep(1)} className="btn-secondary flex items-center gap-2 flex-1">
@@ -258,122 +373,61 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
           </motion.div>
         )}
 
-        {/* STEP 3 — Role-specific details */}
-        {step === 3 && (
-          <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <h3 className="font-montserrat font-bold text-navy text-xl mb-2">
-              {currentRole === 'spectateur' && 'Rappels & préférences'}
-              {currentRole === 'volontaire' && 'Rejoindre l\'équipe'}
-              {currentRole === 'partenaire' && 'Votre organisation'}
-              {currentRole === 'media' && 'Accréditation média'}
-            </h3>
-            <p className="font-inter text-[#212121]/60 text-sm mb-6">
-              {currentRole === 'spectateur' && 'Quelques préférences pour votre venue.'}
-              {currentRole === 'volontaire' && 'Partagez votre motivation et uploadez votre CV.'}
-              {currentRole === 'partenaire' && 'Renseignez votre organisation pour l\'accréditation partenaire.'}
-              {currentRole === 'media' && 'Renseignez vos informations de couverture média.'}
-            </p>
-
-            <form onSubmit={handleStep3} className="space-y-4">
-              {/* Volontaire */}
-              {currentRole === 'volontaire' && (
-                <>
-                  <div>
-                    <label className="font-inter text-xs text-[#212121]/60 mb-1 block">
-                      Motivation * (max 500 caractères)
-                    </label>
-                    <textarea
-                      {...step3Form.register('motivation')}
-                      className="input-field resize-none"
-                      rows={4}
-                      placeholder="Pourquoi souhaitez-vous rejoindre l'équipe organisatrice NEXUS ?"
-                      maxLength={500}
-                    />
-                    <p className="text-xs text-[#212121]/40 text-right mt-1">
-                      {step3Form.watch('motivation')?.length || 0}/500
-                    </p>
-                  </div>
-                  <div>
-                    <label className="font-inter text-xs text-[#212121]/60 mb-1 block">CV (PDF) *</label>
-                    <label className="flex items-center gap-3 p-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-navy/40 transition-colors">
-                      <Upload size={18} className="text-[#212121]/40 flex-shrink-0" />
-                      <span className="font-inter text-sm text-[#212121]/60 truncate">
-                        {cvFile ? cvFile.name : 'Uploader votre CV (PDF)'}
-                      </span>
-                      <input
-                        type="file"
-                        accept=".pdf"
-                        className="sr-only"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) setCvFile(f);
-                        }}
-                      />
-                    </label>
-                    <p className="font-inter text-[#212121]/40 text-xs mt-1">
-                      Après soumission : Merci, l'équipe reviendra vers vous.
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* Partenaire */}
-              {currentRole === 'partenaire' && (
-                <>
-                  <div>
-                    <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Nom de l'organisation *</label>
-                    <input {...step3Form.register('organisation')} className="input-field" placeholder="Votre organisation" />
-                  </div>
-                  <div>
-                    <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Secteur *</label>
-                    <select {...step3Form.register('secteur')} className="input-field bg-transparent">
-                      <option value="">Choisir un secteur</option>
-                      {secteurs.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Message (optionnel)</label>
-                    <textarea {...step3Form.register('motivation')} className="input-field resize-none" rows={3} placeholder="Votre message ou intentions de partenariat" />
-                  </div>
-                </>
-              )}
-
-              {/* Média */}
-              {currentRole === 'media' && (
-                <>
-                  <div>
-                    <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Nom du média *</label>
-                    <input {...step3Form.register('nomMedia')} className="input-field" placeholder="Nom de votre média" />
-                  </div>
-                  <div>
-                    <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Type de média *</label>
-                    <select {...step3Form.register('typeMedia')} className="input-field bg-transparent">
-                      <option value="">Choisir le type</option>
-                      {typesMedia.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Lien vers une publication récente</label>
-                    <input {...step3Form.register('lienPublication')} type="url" className="input-field" placeholder="https://..." />
-                  </div>
-                </>
-              )}
-
-              {/* Rappels pour tous */}
-              <div>
-                <label className="font-inter text-xs text-[#212121]/60 mb-2 block">Rappels (optionnel)</label>
-                {[
-                  { name: 'consentEmail' as const, label: 'Email (J-7, J-1)' },
-                  { name: 'consentSMS' as const, label: 'SMS (J-1)' },
-                  { name: 'consentWhatsapp' as const, label: 'WhatsApp (J-2)' },
-                ].map(({ name, label }) => (
-                  <label key={name} className="flex items-center gap-2 py-1 cursor-pointer">
-                    <input type="checkbox" {...step3Form.register(name)} className="w-4 h-4 accent-navy" />
-                    <span className="font-inter text-sm text-[#212121]/70">{label}</span>
-                  </label>
-                ))}
+        {/* ── STEP 3 — Candidature (candidat uniquement) ── */}
+        {step === 3 && role === 'candidat' && (
+          <motion.div key="step3c" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <h3 className="font-montserrat font-bold text-navy text-xl mb-2">Votre candidature</h3>
+            <p className="font-inter text-[#212121]/60 text-sm mb-6">Choisissez votre sujet et présentez-vous.</p>
+            <form onSubmit={handleStep3Candidat} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Ville *</label>
+                  <input {...candidatForm.register('ville')} className="input-field" placeholder="Rabat, Casablanca…" />
+                  {candidatForm.formState.errors.ville && <p className="text-brand-red text-xs mt-1">{candidatForm.formState.errors.ville.message}</p>}
+                </div>
+                <div>
+                  <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Profession *</label>
+                  <input {...candidatForm.register('profession')} className="input-field" placeholder="Étudiant, ingénieur…" />
+                  {candidatForm.formState.errors.profession && <p className="text-brand-red text-xs mt-1">{candidatForm.formState.errors.profession.message}</p>}
+                </div>
               </div>
-
+              <div>
+                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Sujet choisi *</label>
+                <select {...candidatForm.register('sujet')} className="input-field bg-transparent">
+                  <option value="">Choisissez votre sujet de discours</option>
+                  {SUJETS.map((s, i) => <option key={i} value={s}>{i + 1}. {s}</option>)}
+                </select>
+                {candidatForm.formState.errors.sujet && <p className="text-brand-red text-xs mt-1">{candidatForm.formState.errors.sujet.message}</p>}
+              </div>
+              <div>
+                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Motivation (optionnel, max 500 car.)</label>
+                <textarea
+                  {...candidatForm.register('motivation')}
+                  className="input-field resize-none"
+                  rows={3}
+                  placeholder="Pourquoi voulez-vous participer au concours d'éloquence NEXUS ?"
+                  maxLength={500}
+                />
+                <p className="text-xs text-[#212121]/40 text-right mt-1">
+                  {candidatForm.watch('motivation')?.length ?? 0}/500
+                </p>
+              </div>
+              <div>
+                <label className="font-inter text-xs text-[#212121]/60 mb-1 block">Vidéo de présentation (optionnel)</label>
+                <label className="flex items-center gap-3 p-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-navy/40 transition-colors">
+                  <Upload size={18} className="text-[#212121]/40 flex-shrink-0" />
+                  <span className="font-inter text-sm text-[#212121]/60 truncate flex-1">
+                    {videoFile ? videoFile.name : 'Uploader une vidéo (MP4, MOV — max 100 Mo)'}
+                  </span>
+                  {videoFile && (
+                    <button type="button" onClick={(e) => { e.preventDefault(); setVideoFile(null); }} className="text-[#212121]/40 hover:text-brand-red">
+                      <X size={14} />
+                    </button>
+                  )}
+                  <input type="file" accept="video/mp4,video/quicktime,video/mov,video/*" className="sr-only"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) setVideoFile(f); }} />
+                </label>
+              </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setStep(2)} className="btn-secondary flex items-center gap-2 flex-1">
                   <ChevronLeft size={16} /> Retour
@@ -386,59 +440,66 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
           </motion.div>
         )}
 
-        {/* STEP 4 — Confirmation */}
-        {step === 4 && (
-          <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <h3 className="font-montserrat font-bold text-navy text-xl mb-2">Confirmation de votre inscription</h3>
+        {/* ── STEP 4 (participant) ou 4 (candidat) — Confirmation ── */}
+        {((step === 3 && role === 'participant') || (step === 4 && role === 'candidat')) && (
+          <motion.div key="confirmation" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <h3 className="font-montserrat font-bold text-navy text-xl mb-2">Confirmation</h3>
             <p className="font-inter text-[#212121]/60 text-sm mb-6">Vérifiez vos informations avant de confirmer.</p>
 
             <div className="bg-gray-50 rounded-xl p-4 space-y-2 mb-6 text-sm font-inter">
               {[
-                ['Rôle', formData.role],
-                ['Nom complet', `${formData.prenom} ${formData.nom}`],
-                ['Email', formData.email],
-                ['Téléphone', formData.telephone],
-                ['Nationalité', formData.nationalite],
+                ['Compte', accountData?.email ?? ''],
+                ['Rôle', role === 'candidat' ? 'Candidat au Concours d\'Éloquence' : 'Participant'],
+                ['Nom complet', `${infoData.prenom} ${infoData.nom}`],
+                ['Téléphone', infoData.telephone],
+                ['Nationalité', infoData.nationalite],
               ].map(([label, value]) => (
-                <div key={label} className="flex justify-between">
-                  <span className="text-[#212121]/50">{label}</span>
-                  <span className="font-medium text-navy capitalize">{value}</span>
+                <div key={label} className="flex justify-between gap-2">
+                  <span className="text-[#212121]/50 flex-shrink-0">{label}</span>
+                  <span className="font-medium text-navy text-right">{value}</span>
                 </div>
               ))}
+              {role === 'candidat' && (
+                <>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[#212121]/50 flex-shrink-0">Sujet</span>
+                    <span className="font-medium text-navy text-right text-xs leading-tight">{candidatForm.getValues('sujet')}</span>
+                  </div>
+                  {videoFile && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-[#212121]/50 flex-shrink-0">Vidéo</span>
+                      <span className="font-medium text-brand-green text-right text-xs">✓ {videoFile.name}</span>
+                    </div>
+                  )}
+                </>
+              )}
               <div className="border-t border-gray-200 pt-2 flex justify-between">
                 <span className="text-[#212121]/50">Événement</span>
-                <span className="font-medium text-navy">NEXUS SPECTACLE · 11 Juil. 2026 · 15h00</span>
+                <span className="font-medium text-navy text-right">NEXUS SPECTACLE · 11 Juil. 2026 · 15h00</span>
               </div>
             </div>
 
-            {formData.role === 'volontaire' && cvFile && (
-              <div className="flex items-center gap-2 bg-brand-green/8 border border-brand-green/20 rounded-lg p-3 mb-4">
-                <Check size={14} className="text-brand-green flex-shrink-0" />
-                <span className="font-inter text-xs text-brand-green">CV joint : {cvFile.name}</span>
-              </div>
-            )}
-
             <label className="flex items-start gap-3 cursor-pointer mb-6">
-              <input
-                type="checkbox"
-                className="w-4 h-4 mt-0.5 accent-navy flex-shrink-0"
-                onChange={(e) => setFormData((prev) => ({ ...prev, rgpd: e.target.checked }))}
-              />
+              <input type="checkbox" className="w-4 h-4 mt-0.5 accent-navy flex-shrink-0"
+                checked={rgpd} onChange={(e) => setRgpd(e.target.checked)} />
               <span className="font-inter text-xs text-[#212121]/60 leading-relaxed">
                 J'accepte les{' '}
-                <a href="/cgv" className="text-brand-red underline" target="_blank">Conditions d'utilisation</a>
+                <a href="/cgv" className="text-brand-red underline" target="_blank" rel="noopener noreferrer">Conditions d'utilisation</a>
                 {' '}et la{' '}
-                <a href="/politique-confidentialite" className="text-brand-red underline" target="_blank">Politique de confidentialité</a>.
+                <a href="/politique-confidentialite" className="text-brand-red underline" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>.
               </span>
             </label>
 
             <div className="flex gap-3">
-              <button type="button" onClick={() => setStep(3)} className="btn-secondary flex items-center gap-2 flex-1">
+              <button type="button"
+                onClick={() => setStep(role === 'candidat' ? 3 : 2)}
+                className="btn-secondary flex items-center gap-2 flex-1">
                 <ChevronLeft size={16} /> Retour
               </button>
               <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !(formData as any).rgpd}
+                type="button"
+                onClick={finalSubmit}
+                disabled={isSubmitting || !rgpd}
                 className="btn-red flex items-center justify-center gap-2 flex-1 disabled:opacity-50"
               >
                 {isSubmitting
@@ -448,6 +509,7 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
             </div>
           </motion.div>
         )}
+
       </AnimatePresence>
     </div>
   );

@@ -104,7 +104,11 @@ model EloquenceCandidate {
   nationalite   String
   dateNaissance DateTime?
   motivation    String
+  ville         String?
+  profession    String?
+  sujet         String?
   cvUrl         String?
+  videoPublique Boolean         @default(false)
   status        CandidateStatus @default(pending)
   votes         Vote[]
   createdAt     DateTime        @default(now())

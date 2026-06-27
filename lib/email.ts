@@ -86,13 +86,14 @@ export async function sendConfirmationEmail(data: InscriptionData) {
     </p>
     <div class="info-box">
       <div class="info-row"><span>Événement</span><strong>NEXUS SPECTACLE</strong></div>
-      <div class="info-row"><span>Date</span><strong>11 juillet 2026 — 18h00</strong></div>
-      <div class="info-row"><span>Lieu</span><strong>Théâtre Mohamed Bahnini, Rabat</strong></div>
+      <div class="info-row"><span>Date</span><strong>11 juillet 2026 — 15h00</strong></div>
+      <div class="info-row"><span>Portes</span><strong>Ouverture à 14h00</strong></div>
+      <div class="info-row"><span>Lieu</span><strong>INSMAC, Rabat</strong></div>
       <div class="info-row"><span>Rôle</span><strong>${data.role}</strong></div>
       <div class="info-row" style="border:none"><span>Statut</span><strong style="color:#4CAF50">✓ Confirmé</strong></div>
     </div>
     <p class="text">Ajoutez l'événement à votre calendrier :</p>
-    <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=NEXUS+SPECTACLE&dates=20260711T160000Z/20260711T200000Z&details=Inscription+confirm%C3%A9e&location=Th%C3%A9%C3%A2tre+Mohamed+Bahnini+Rabat" class="btn">📅 Google Calendar</a>
+    <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=NEXUS+SPECTACLE&dates=20260711T140000Z/20260711T170000Z&details=Inscription+confirm%C3%A9e&location=INSMAC%2C+Rabat" class="btn">📅 Google Calendar</a>
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0;text-align:center;">
       <p style="font-size:15px;font-weight:700;color:#15803d;margin:0 0 8px;">💬 Rejoignez notre groupe WhatsApp NEXUS</p>
       <p style="font-size:14px;color:#444;margin:0 0 16px;">Restez informé(e) de toutes les actualités et préparez-vous avec la communauté :</p>
@@ -132,7 +133,7 @@ export async function sendReminderEmail(
     7: {
       subject: `Une semaine. Préparez-vous à être illuminé(e)s.`,
       headline: `J-7 🔥`,
-      body: `Dans 7 jours, NEXUS SPECTACLE illumine le Théâtre Mohamed Bahnini. 12 voix, 12 nationalités, une seule scène.`,
+      body: `Dans 7 jours, NEXUS SPECTACLE illumine le INSMAC. 12 voix, 12 nationalités, une seule scène.`,
     },
     3: {
       subject: `NEXUS SPECTACLE dans 3 jours — Infos pratiques`,
@@ -154,8 +155,8 @@ export async function sendReminderEmail(
     <p class="text">Bonjour <strong>${data.prenom}</strong>,</p>
     <p class="text">${copy.body}</p>
     <div class="info-box">
-      <div class="info-row"><span>Date</span><strong>11 juillet 2026 — 18h00</strong></div>
-      <div class="info-row" style="border:none"><span>Lieu</span><strong>Théâtre Mohamed Bahnini, Rabat</strong></div>
+      <div class="info-row"><span>Date</span><strong>11 juillet 2026 — 15h00</strong></div>
+      <div class="info-row" style="border:none"><span>Lieu</span><strong>INSMAC, Rabat</strong></div>
     </div>
     <a href="${process.env.NEXT_PUBLIC_APP_URL}/spectacle" class="btn">Voir le programme →</a>
   `;
@@ -194,7 +195,16 @@ export async function sendCandidatureConfirmation(data: CandidatureData) {
       <div class="info-row"><span>Nom</span><strong>${data.prenom} ${data.nom}</strong></div>
       <div class="info-row"><span>Email</span><strong>${data.email}</strong></div>
       <div class="info-row"><span>Téléphone</span><strong>${data.telephone}</strong></div>
-      <div class="info-row" style="border:none"><span>Nationalité</span><strong>${data.nationalite}</strong></div>
+      <div class="info-row"><span>Date</span><strong>11 juillet 2026 — 15h00</strong></div>
+      <div class="info-row" style="border:none"><span>Lieu</span><strong>INSMAC, Rabat</strong></div>
+    </div>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0;text-align:center;">
+      <p style="font-size:15px;font-weight:700;color:#15803d;margin:0 0 8px;">💬 Rejoignez notre groupe WhatsApp NEXUS</p>
+      <p style="font-size:14px;color:#444;margin:0 0 16px;">Restez informé(e) des actualités et des résultats du concours :</p>
+      <a href="https://chat.whatsapp.com/FvbLrzGwxDS9ThyoApsz6M?mode=gi_t"
+         style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;">
+        📱 Rejoindre le groupe WhatsApp
+      </a>
     </div>
     <p class="text">
       La jeunesse ne subit plus. Elle éclaire.<br/>

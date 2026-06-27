@@ -48,7 +48,7 @@ export default function JoinMovement() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                href="/spectacle#inscription"
+                href="/spectacle?tab=inscription"
                 className="group flex items-center gap-2 bg-brand-red text-white font-raleway font-bold px-8 py-4 rounded-md hover:bg-red-700 transition-all duration-300 hover:shadow-glow"
               >
                 Réserver maintenant — Gratuit

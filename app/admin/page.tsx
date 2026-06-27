@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   Users, Mail, Bell, Settings, BarChart3, FileDown,
-  ToggleLeft, ToggleRight, Send, Eye, Trash2, Search,
-  Check, X, Loader2, Mic2, Newspaper, Building2,
+  ToggleLeft, ToggleRight, Send, Trash2, Search,
+  X, Loader2, Mic2, Newspaper, Building2,
   UserCheck, Award, Globe, Plus, Edit3, Save,
-  PlayCircle, ChevronDown, RefreshCw, ExternalLink,
+  PlayCircle, RefreshCw, ExternalLink, CheckCircle, XCircle,
+  Video, EyeOff,
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -33,7 +34,9 @@ interface EmailLog {
 }
 interface EloCandidate {
   id: string; prenom: string; nom: string; email: string; telephone: string;
-  nationalite: string; motivation: string | null; cvUrl: string | null;
+  nationalite: string; ville: string | null; profession: string | null;
+  sujet: string | null; motivation: string | null; cvUrl: string | null;
+  videoPublique: boolean;
   status: string; createdAt: string; _count: { votes: number };
 }
 
@@ -263,6 +266,8 @@ export default function AdminPage() {
   const [articleModal, setArticleModal] = useState<{ open: boolean; article: Article | null }>({ open: false, article: null });
   const [videoModal, setVideoModal] = useState<{ open: boolean; video: Video | null }>({ open: false, video: null });
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; id: string } | null>(null);
+  const [videoPlayer, setVideoPlayer] = useState<{ url: string; name: string } | null>(null);
+  const [candidateLoading, setCandidateLoading] = useState<string | null>(null);
 
   // Toggles (module d'état local)
   const [votePublic, setVotePublic] = useState(false);
@@ -371,6 +376,24 @@ export default function AdminPage() {
     if (deleteConfirm.type === 'article') fetchArticles(); else fetchVideos();
   };
 
+  const updateCandidate = async (id: string, patch: { status?: string; videoPublique?: boolean }) => {
+    setCandidateLoading(id);
+    try {
+      const res = await fetch(`/api/admin/candidates/${id}`, {
+        method: 'PATCH',
+        headers: adminHeaders(adminPw),
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        setEloCandidates((prev) =>
+          prev.map((c) => c.id === id ? { ...c, ...patch } : c)
+        );
+      }
+    } finally {
+      setCandidateLoading(null);
+    }
+  };
+
   const exportCsv = async () => {
     const res = await fetch('/api/admin/inscriptions?export=csv', { headers: { 'x-admin-password': adminPw } });
     const blob = await res.blob();
@@ -431,6 +454,27 @@ export default function AdminPage() {
 
   return (
     <>
+      {/* Video player modal */}
+      {videoPlayer && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setVideoPlayer(null)}>
+          <div className="bg-black rounded-2xl overflow-hidden shadow-2xl w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 bg-[#111]">
+              <p className="font-raleway font-semibold text-white text-sm truncate">{videoPlayer.name}</p>
+              <button onClick={() => setVideoPlayer(null)} className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+            <video
+              src={videoPlayer.url}
+              controls
+              autoPlay
+              className="w-full max-h-[70vh] bg-black"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Modals */}
       {articleModal.open && (
         <ArticleModal
@@ -593,49 +637,45 @@ export default function AdminPage() {
               </div>
 
               {/* Candidats éloquence */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <div>
                   <h2 className="font-montserrat font-bold text-navy text-lg">Candidatures éloquence</h2>
-                  <p className="font-inter text-[#212121]/50 text-sm">{eloCandidates.length} candidature{eloCandidates.length !== 1 ? 's' : ''}</p>
+                  <p className="font-inter text-[#212121]/50 text-sm">
+                    {eloCandidates.length} candidature{eloCandidates.length !== 1 ? 's' : ''} ·{' '}
+                    <span className="text-brand-green">{eloCandidates.filter(c => c.status === 'validated').length} validée{eloCandidates.filter(c => c.status === 'validated').length !== 1 ? 's' : ''}</span>
+                    {' · '}
+                    <span className="text-brand-orange">{eloCandidates.filter(c => c.status === 'pending').length} en attente</span>
+                  </p>
                 </div>
                 <button onClick={fetchCandidates} className="btn-secondary flex items-center gap-2 text-sm">
                   <RefreshCw size={14} /> Actualiser
                 </button>
               </div>
 
-              <div className="card overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        {['Candidat', 'Email', 'Téléphone', 'Nationalité', 'Motivation', 'Vidéo', 'Statut', 'Date'].map(h => (
-                          <th key={h} className="px-4 py-3 text-left font-raleway font-semibold text-[#212121]/50 text-xs">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {eloCandidates.map((c) => (
-                        <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 font-inter text-navy text-xs font-medium whitespace-nowrap">{c.prenom} {c.nom}</td>
-                          <td className="px-4 py-3 text-xs">
-                            <a href={`mailto:${c.email}`} className="text-brand-red hover:underline font-inter">{c.email}</a>
-                          </td>
-                          <td className="px-4 py-3 font-inter text-[#212121]/60 text-xs whitespace-nowrap">{c.telephone}</td>
-                          <td className="px-4 py-3 font-inter text-[#212121]/60 text-xs">{c.nationalite}</td>
-                          <td className="px-4 py-3 font-inter text-[#212121]/50 text-xs max-w-[180px]">
-                            <span className="line-clamp-2">{c.motivation ?? <span className="italic text-[#212121]/30">—</span>}</span>
-                          </td>
-                          <td className="px-4 py-3 text-xs">
-                            {c.cvUrl ? (
-                              <a href={c.cvUrl} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 bg-brand-red/10 text-brand-red font-semibold px-3 py-1 rounded-full hover:bg-brand-red/20 transition whitespace-nowrap">
-                                ▶ Voir la vidéo
-                              </a>
-                            ) : (
-                              <span className="text-[#212121]/30 italic">Non disponible</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
+              <div className="space-y-3">
+                {eloCandidates.length === 0 && (
+                  <div className="card p-10 text-center font-inter text-[#212121]/40 text-sm">
+                    Aucune candidature reçue pour l'instant
+                  </div>
+                )}
+                {eloCandidates.map((c) => {
+                  const isLoading = candidateLoading === c.id;
+                  return (
+                    <div key={c.id} className={`card p-5 border-l-4 transition-all ${
+                      c.status === 'validated' ? 'border-brand-green' :
+                      c.status === 'rejected'  ? 'border-brand-red/40' :
+                      'border-brand-orange'
+                    }`}>
+                      <div className="flex items-start gap-4 flex-wrap">
+                        {/* Avatar initiales */}
+                        <div className="w-10 h-10 rounded-full bg-navy flex items-center justify-center text-white font-montserrat font-bold text-sm flex-shrink-0">
+                          {c.prenom[0]}{c.nom[0]}
+                        </div>
+
+                        {/* Infos */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="font-raleway font-bold text-navy text-sm">{c.prenom} {c.nom}</span>
                             <span className={`badge text-xs ${
                               c.status === 'validated' ? 'bg-brand-green/10 text-brand-green' :
                               c.status === 'rejected'  ? 'bg-brand-red/10 text-brand-red' :
@@ -643,20 +683,98 @@ export default function AdminPage() {
                             }`}>
                               {c.status === 'validated' ? '✓ Validé' : c.status === 'rejected' ? '✗ Refusé' : '⏳ En attente'}
                             </span>
-                          </td>
-                          <td className="px-4 py-3 font-inter text-[#212121]/40 text-xs whitespace-nowrap">
-                            {new Date(c.createdAt).toLocaleDateString('fr-FR')}
-                          </td>
-                        </tr>
-                      ))}
-                      {eloCandidates.length === 0 && (
-                        <tr><td colSpan={8} className="px-4 py-10 text-center font-inter text-[#212121]/40 text-sm">
-                          Aucune candidature reçue pour l'instant
-                        </td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                            {c.videoPublique && (
+                              <span className="badge bg-blue-50 text-blue-600 text-xs flex items-center gap-1">
+                                <Video size={10} /> Vidéo publique
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs font-inter text-[#212121]/60 mb-2">
+                            <a href={`mailto:${c.email}`} className="text-brand-red hover:underline">{c.email}</a>
+                            <span>{c.nationalite}</span>
+                            {c.ville && <span>{c.ville}</span>}
+                            {c.profession && <span>{c.profession}</span>}
+                            <span>{new Date(c.createdAt).toLocaleDateString('fr-FR')}</span>
+                            <span className="text-brand-orange">{c._count.votes} vote{c._count.votes !== 1 ? 's' : ''}</span>
+                          </div>
+                          {c.sujet && (
+                            <p className="text-xs font-inter text-navy/70 italic mb-2 bg-gray-50 rounded px-2 py-1 inline-block">
+                              🎤 {c.sujet}
+                            </p>
+                          )}
+                          {c.motivation && (
+                            <p className="text-xs font-inter text-[#212121]/50 line-clamp-2">{c.motivation}</p>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                          {/* Voir vidéo */}
+                          {c.cvUrl ? (
+                            <button
+                              onClick={() => setVideoPlayer({ url: c.cvUrl!, name: `${c.prenom} ${c.nom}` })}
+                              className="inline-flex items-center gap-1.5 bg-navy/8 text-navy font-raleway font-semibold text-xs px-3 py-2 rounded-lg hover:bg-navy/15 transition-colors"
+                            >
+                              <PlayCircle size={13} /> Voir vidéo
+                            </button>
+                          ) : (
+                            <span className="text-xs font-inter text-[#212121]/30 italic px-2">Pas de vidéo</span>
+                          )}
+
+                          {/* Visibilité vidéo */}
+                          {c.cvUrl && (
+                            <button
+                              onClick={() => updateCandidate(c.id, { videoPublique: !c.videoPublique })}
+                              disabled={isLoading}
+                              title={c.videoPublique ? 'Rendre la vidéo privée' : 'Rendre la vidéo publique'}
+                              className={`inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-raleway font-semibold transition-colors ${
+                                c.videoPublique
+                                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                  : 'bg-gray-100 text-[#212121]/50 hover:bg-gray-200'
+                              }`}
+                            >
+                              {isLoading ? <Loader2 size={12} className="animate-spin" /> : <EyeOff size={12} />}
+                              {c.videoPublique ? 'Publique' : 'Privée'}
+                            </button>
+                          )}
+
+                          {/* Valider */}
+                          <button
+                            onClick={() => {
+                              const newStatus = c.status === 'validated' ? 'pending' : 'validated';
+                              const patch: { status: string; videoPublique?: boolean } = { status: newStatus };
+                              if (newStatus === 'validated' && c.cvUrl) patch.videoPublique = true;
+                              updateCandidate(c.id, patch);
+                            }}
+                            disabled={isLoading}
+                            className={`inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-raleway font-semibold transition-colors ${
+                              c.status === 'validated'
+                                ? 'bg-brand-green text-white hover:bg-green-700'
+                                : 'bg-brand-green/10 text-brand-green hover:bg-brand-green/20'
+                            }`}
+                          >
+                            {isLoading ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                            {c.status === 'validated' ? 'Validé ✓' : 'Valider'}
+                          </button>
+
+                          {/* Refuser */}
+                          <button
+                            onClick={() => updateCandidate(c.id, { status: c.status === 'rejected' ? 'pending' : 'rejected' })}
+                            disabled={isLoading}
+                            className={`inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-raleway font-semibold transition-colors ${
+                              c.status === 'rejected'
+                                ? 'bg-brand-red text-white hover:bg-red-700'
+                                : 'bg-brand-red/10 text-brand-red hover:bg-brand-red/20'
+                            }`}
+                          >
+                            {isLoading ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />}
+                            {c.status === 'rejected' ? 'Refusé ✗' : 'Refuser'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           )}

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: '%s | NEXUS JEUNESSES',
   },
   description:
-    'NEXUS JEUNESSES est la plateforme digitale officielle de la jeunesse africaine en Afrique du Nord, orchestrée par UESCOM. Événement phare : NEXUS SPECTACLE, 11 juillet 2026, Théâtre Mohamed Bahnini, Rabat.',
+    'NEXUS JEUNESSES est la plateforme digitale officielle de la jeunesse africaine en Afrique du Nord, orchestrée par UESCOM. Événement phare : NEXUS SPECTACLE, 11 juillet 2026, INSMAC, Rabat.',
   keywords: [
     'NEXUS JEUNESSES',
     'UESCOM',

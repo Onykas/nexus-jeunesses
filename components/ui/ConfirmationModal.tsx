@@ -2,10 +2,7 @@
 
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, X, Calendar, Share2, Instagram, Linkedin } from 'lucide-react';
-import Link from 'next/link';
-
-declare const confetti: any;
+import { CheckCircle, X, Calendar, Linkedin } from 'lucide-react';
 
 export default function ConfirmationModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
@@ -63,12 +60,12 @@ export default function ConfirmationModal({ onClose }: { onClose: () => void }) 
         <div className="bg-gray-50 rounded-xl p-4 mb-6 text-center">
           <div className="font-montserrat font-bold text-navy text-sm mb-1">NEXUS SPECTACLE</div>
           <div className="font-inter text-[#212121]/60 text-xs">11 Juillet 2026 · 18h00</div>
-          <div className="font-inter text-[#212121]/60 text-xs">Théâtre Mohamed Bahnini, Rabat</div>
+          <div className="font-inter text-[#212121]/60 text-xs">INSMAC, Rabat</div>
         </div>
 
         <div className="space-y-3 mb-6">
           <a
-            href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=NEXUS+SPECTACLE&dates=20260711T160000Z/20260711T200000Z&details=R%C3%A9servation+confirm%C3%A9e&location=Th%C3%A9%C3%A2tre+Mohamed+Bahnini+Rabat`}
+            href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=NEXUS+SPECTACLE&dates=20260711T140000Z/20260711T170000Z&details=R%C3%A9servation+confirm%C3%A9e&location=INSMAC%2C+Rabat`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary w-full flex items-center justify-center gap-2 text-sm"
@@ -106,7 +103,10 @@ export default function ConfirmationModal({ onClose }: { onClose: () => void }) 
               rel="noopener noreferrer"
               className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-raleway font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
             >
-              <Instagram size={14} /> Instagram
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+              </svg>
+              Instagram
             </a>
             <a
               href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://nexusjeunesses.org/spectacle')}&summary=${shareText}`}

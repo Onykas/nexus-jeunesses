@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import HeroHome from '@/components/sections/HeroHome';
 import ModulesGrid from '@/components/sections/ModulesGrid';
-import SponsorsSection from '@/components/sections/SponsorsSection';
-import FeaturedArticles from '@/components/sections/FeaturedArticles';
+import EloquenceCTA from '@/components/sections/EloquenceCTA';
 import JoinMovement from '@/components/sections/JoinMovement';
+import FeaturedArticles from '@/components/sections/FeaturedArticles';
+import SponsorsSection from '@/components/sections/SponsorsSection';
 
 export const metadata: Metadata = {
   title: 'Accueil',
@@ -16,6 +17,7 @@ export default function HomePage() {
     <>
       <HeroHome />
       <ModulesGrid />
+      <EloquenceCTA />
       <JoinMovement />
       <FeaturedArticles />
       <SponsorsSection />

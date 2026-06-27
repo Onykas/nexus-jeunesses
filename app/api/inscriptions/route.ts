@@ -88,8 +88,7 @@ export async function POST(req: NextRequest) {
       } catch (emailErr) {
         const msg = emailErr instanceof Error ? emailErr.message : String(emailErr);
         console.error('[inscription] ÉCHEC email:', msg);
-        console.error('[inscription] RESEND_API_KEY définie:', !!process.env.RESEND_API_KEY);
-        console.error('[inscription] FROM_EMAIL:', process.env.FROM_EMAIL || '(fallback contact@nexusjeunesses.org)');
+        console.error('[inscription] GMAIL_USER défini:', !!process.env.GMAIL_USER);
       }
     }
 

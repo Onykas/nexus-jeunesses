@@ -74,7 +74,7 @@ export default function HeroHome() {
           <span className="w-px h-4 bg-white/30" />
           <span className="flex items-center gap-2">
             <MapPin size={16} className="text-brand-red" />
-            <span className="font-inter text-sm">Théâtre INSMAC, Rabat</span>
+            <span className="font-inter text-sm">INSMAC, Rabat</span>
           </span>
           <span className="w-px h-4 bg-white/30 hidden sm:block" />
           <span className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export default function HeroHome() {
           className="flex flex-wrap items-center justify-center gap-4"
         >
           <Link
-            href="/spectacle#inscription"
+            href="/spectacle?tab=inscription"
             className="group flex items-center gap-2 bg-brand-red text-white font-raleway font-bold px-8 py-4 rounded-md hover:bg-red-700 transition-all duration-300 hover:shadow-glow text-base"
           >
             Réserver ma place
