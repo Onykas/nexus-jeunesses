@@ -59,7 +59,7 @@ export default function ConfirmationModal({ onClose }: { onClose: () => void }) 
 
         <div className="bg-gray-50 rounded-xl p-4 mb-6 text-center">
           <div className="font-montserrat font-bold text-navy text-sm mb-1">NEXUS SPECTACLE</div>
-          <div className="font-inter text-[#212121]/60 text-xs">11 Juillet 2026 · 18h00</div>
+          <div className="font-inter text-[#212121]/60 text-xs">11 Juillet 2026 · 15h00</div>
           <div className="font-inter text-[#212121]/60 text-xs">INSMAC, Rabat</div>
         </div>
 
