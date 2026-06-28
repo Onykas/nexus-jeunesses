@@ -8,7 +8,9 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('[candidature] step 1: parsing formData');
     const formData = await req.formData();
+    console.log('[candidature] step 2: formData parsed, keys:', [...formData.keys()].join(','));
 
     const prenom      = formData.get('prenom') as string;
     const nom         = formData.get('nom') as string;
@@ -20,19 +22,22 @@ export async function POST(req: NextRequest) {
     const ville       = (formData.get('ville') as string | null) ?? '';
     const profession  = (formData.get('profession') as string | null) ?? '';
     const sujet       = (formData.get('sujet') as string | null) ?? '';
-    // Priorité : URL pré-uploadée côté client (évite la limite 6 MB de Netlify)
     const preUploadedUrl = formData.get('videoUrl') as string | null;
-    // Fallback : fichier envoyé directement (legacy, petits fichiers seulement)
     const videoFile = (!preUploadedUrl
       ? (formData.get('video') ?? formData.get('cv'))
       : null) as File | null;
 
+    console.log('[candidature] step 3: email=' + email + ' preUploadedUrl=' + (preUploadedUrl ? 'oui' : 'non'));
+
     if (!prenom || !nom || !email || !telephone || !nationalite) {
+      console.log('[candidature] step 3b: champs manquants');
       return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 });
     }
 
+    console.log('[candidature] step 4: check doublon');
     const existing = await prisma.eloquenceCandidate.findUnique({ where: { email } });
     if (existing) {
+      console.log('[candidature] step 4b: email deja existant');
       return NextResponse.json({ error: 'Une candidature existe déjà avec cet email' }, { status: 409 });
     }
 
@@ -46,6 +51,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    console.log('[candidature] step 5: create candidat en DB');
     const candidate = await prisma.eloquenceCandidate.create({
       data: {
         prenom,
@@ -74,6 +80,7 @@ export async function POST(req: NextRequest) {
       videoUrl: videoUrl ?? undefined,
     }).catch((e) => console.error('[candidature] email admin échoué:', e));
 
+    console.log('[candidature] step 6: success, id=' + candidate.id);
     return NextResponse.json({ id: candidate.id, videoUrl }, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
