@@ -111,7 +111,7 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
   /* ── STEP 2 : infos ── */
   const handleStep2 = infoForm.handleSubmit((data) => {
     setInfoData(data);
-    setStep(role === 'candidat' ? 3 : 4);
+    setStep(3);
   });
 
   /* ── STEP 3 : candidature ── */
@@ -126,7 +126,7 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
     try {
       // 1. Créer le compte NEXUS (ou se connecter si déjà existant)
       if (accountData) {
-        const regRes = await fetch('/api/auth/register', {
+        await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
