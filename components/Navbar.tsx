@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -45,12 +45,21 @@ export default function Navbar() {
     setUserMenuOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
+  const fetchUser = useCallback(() => {
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((data) => setUser(data))
       .catch(() => setUser(null));
-  }, [pathname]);
+  }, []);
+
+  useEffect(() => {
+    fetchUser();
+  }, [pathname, fetchUser]);
+
+  useEffect(() => {
+    window.addEventListener('nexus:auth', fetchUser);
+    return () => window.removeEventListener('nexus:auth', fetchUser);
+  }, [fetchUser]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {

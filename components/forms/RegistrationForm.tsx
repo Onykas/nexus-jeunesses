@@ -158,6 +158,35 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
         if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
       } else {
         const cd = candidatForm.getValues();
+
+        // Upload vidéo directement vers Supabase depuis le navigateur
+        // (évite la limite 6 MB de Netlify sur les fonctions serverless)
+        let uploadedVideoUrl: string | undefined;
+        if (videoFile) {
+          try {
+            const urlRes = await fetch('/api/upload-video-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileName: videoFile.name }),
+            });
+            const urlData = await urlRes.json();
+            if (urlRes.ok && urlData.signedUrl) {
+              const uploadRes = await fetch(urlData.signedUrl, {
+                method: 'PUT',
+                body: videoFile,
+                headers: { 'Content-Type': videoFile.type || 'video/mp4' },
+              });
+              if (uploadRes.ok) {
+                uploadedVideoUrl = urlData.publicUrl;
+              } else {
+                console.warn('[upload] PUT échoué, candidature sans vidéo');
+              }
+            }
+          } catch (uploadErr) {
+            console.warn('[upload] erreur réseau, candidature sans vidéo:', uploadErr);
+          }
+        }
+
         const body = new FormData();
         body.append('email', accountData?.email ?? '');
         Object.entries(infoData).forEach(([k, v]) => v != null && body.append(k, String(v)));
@@ -165,7 +194,7 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
         body.append('profession', cd.profession);
         body.append('sujet', cd.sujet);
         if (cd.motivation) body.append('motivation', cd.motivation);
-        if (videoFile) body.append('video', videoFile);
+        if (uploadedVideoUrl) body.append('videoUrl', uploadedVideoUrl);
         const res = await fetch('/api/candidature-eloquence', { method: 'POST', body });
         const json = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
@@ -177,6 +206,7 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
           : 'Inscription confirmée ! Vérifiez votre email.',
         'success'
       );
+      window.dispatchEvent(new Event('nexus:auth'));
       onSuccess?.();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Une erreur est survenue.';

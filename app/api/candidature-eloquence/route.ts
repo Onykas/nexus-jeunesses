@@ -20,8 +20,12 @@ export async function POST(req: NextRequest) {
     const ville       = (formData.get('ville') as string | null) ?? '';
     const profession  = (formData.get('profession') as string | null) ?? '';
     const sujet       = (formData.get('sujet') as string | null) ?? '';
-    // Support both "video" (new form) and "cv" (legacy)
-    const videoFile   = (formData.get('video') ?? formData.get('cv')) as File | null;
+    // Priorité : URL pré-uploadée côté client (évite la limite 6 MB de Netlify)
+    const preUploadedUrl = formData.get('videoUrl') as string | null;
+    // Fallback : fichier envoyé directement (legacy, petits fichiers seulement)
+    const videoFile = (!preUploadedUrl
+      ? (formData.get('video') ?? formData.get('cv'))
+      : null) as File | null;
 
     if (!prenom || !nom || !email || !telephone || !nationalite) {
       return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 });
@@ -32,14 +36,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Une candidature existe déjà avec cet email' }, { status: 409 });
     }
 
-    let videoUrl: string | null = null;
-    if (videoFile && videoFile.size > 0) {
+    let videoUrl: string | null = preUploadedUrl;
+    if (!videoUrl && videoFile && videoFile.size > 0) {
       try {
         videoUrl = await uploadVideo(videoFile);
       } catch (uploadErr) {
         const msg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
         console.error('[candidature] upload vidéo échoué (candidature continue sans vidéo):', msg);
-        // On continue sans vidéo plutôt que de bloquer toute la candidature
       }
     }
 
@@ -73,8 +76,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ id: candidate.id, videoUrl }, { status: 201 });
   } catch (err) {
-    console.error('[candidature] erreur:', err);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[candidature] erreur:', msg);
+    return NextResponse.json(
+      { error: 'Erreur serveur', detail: process.env.NODE_ENV !== 'production' ? msg : undefined },
+      { status: 500 }
+    );
   }
 }
 
