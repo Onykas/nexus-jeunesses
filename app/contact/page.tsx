@@ -46,7 +46,7 @@ export default function ContactPage() {
                 { icon: Mail, label: 'Partenariats', value: 'partenariats@nexusjeunesses.org', href: 'mailto:partenariats@nexusjeunesses.org' },
                 { icon: Mail, label: 'Presse', value: 'presse@nexusjeunesses.org', href: 'mailto:presse@nexusjeunesses.org' },
                 { icon: MapPin, label: 'Lieu de l\'événement', value: 'INSMAC, Rabat', href: '#' },
-                { icon: Phone, label: 'Téléphone', value: '+212 6 00 00 00 00', href: 'tel:+212600000000' },
+                { icon: Phone, label: 'Téléphone', value: '+212 7 15 79 59 62', href: 'tel:+212715795962' },
               ].map(({ icon: Icon, label, value, href }) => (
                 <div key={label} className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-brand-red/10 rounded-lg flex items-center justify-center flex-shrink-0">
