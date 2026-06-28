@@ -23,5 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   const publicUrl = supabase.storage.from('videos').getPublicUrl(path).data.publicUrl;
-  return NextResponse.json({ signedUrl: data.signedUrl, publicUrl });
+  // Le token doit être ajouté à l'URL signée pour que le PUT fonctionne
+  const signedUrl = `${data.signedUrl}?token=${data.token}`;
+  return NextResponse.json({ signedUrl, publicUrl });
 }
