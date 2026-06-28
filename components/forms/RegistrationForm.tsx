@@ -197,7 +197,7 @@ export default function RegistrationForm({ onSuccess }: { onSuccess?: () => void
         if (uploadedVideoUrl) body.append('videoUrl', uploadedVideoUrl);
         const res = await fetch('/api/candidature-eloquence', { method: 'POST', body });
         const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.detail || json.error || `Erreur ${res.status}`);
+        if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
       }
 
       toast(
