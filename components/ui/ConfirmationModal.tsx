@@ -98,7 +98,7 @@ export default function ConfirmationModal({ onClose }: { onClose: () => void }) 
           <p className="font-inter text-[#212121]/50 text-xs text-center mb-3">Partagez l'événement</p>
           <div className="flex gap-2 justify-center">
             <a
-              href={`https://www.instagram.com/`}
+              href="https://www.instagram.com/nexusjeunesses"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-raleway font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
@@ -109,7 +109,7 @@ export default function ConfirmationModal({ onClose }: { onClose: () => void }) 
               Instagram
             </a>
             <a
-              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://nexusjeunesses.org/spectacle')}&summary=${shareText}`}
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://nexusjeunesses.org/spectacle')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 bg-[#0077B5] text-white text-xs font-raleway font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"

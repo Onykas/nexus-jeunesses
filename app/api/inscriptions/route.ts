@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { sendConfirmationEmail } from '@/lib/email';
 import { generateICalendar, sanitizeInput, rateLimit } from '@/lib/utils';
 
+export const maxDuration = 30;
+
 const rateLimitMap = new Map<string, { count: number; ts: number }>();
 
 export async function POST(req: NextRequest) {

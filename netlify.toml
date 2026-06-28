@@ -9,3 +9,8 @@
   NODE_VERSION = "18"
   NEXT_PUBLIC_APP_URL = "https://nexusjeunesses.org"
   NEXT_PUBLIC_EVENT_DATE = "2026-07-11T15:00:00+01:00"
+  NEXT_PUBLIC_ADMIN_DEMO = "nexus2026"
+  FROM_EMAIL = "NEXUS JEUNESSES <noreply@nexusjeunesses.org>"
+  ADMIN_EMAIL = "olgasangupambanika@gmail.com"
+  GMAIL_USER = "contact@nexusjeunesses.org"
+  SUPABASE_URL = "https://vrefvoywkbrbhiolxsri.supabase.co"
